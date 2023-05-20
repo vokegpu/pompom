@@ -63,7 +63,7 @@ typedef BMAPINFO *PBMAPINFO;
 #define BMAP_MEMORY 1
 
 typedef struct _LINEPACK {
-  ULONG        ulStyleStep;   /* Tag to be added to ulStyleValue. */
+  ULONG        ulStyleStep;   /* Value to be added to ulStyleValue. */
   ULONG        ulStyleValue;  /* Style value at the current pel. */
   ULONG        ulFlags;       /* Flags used for the LINEPACK data structure. */
   struct _LINEPACK *plpkNext; /* Pointer to next LINEPACK data structure. */

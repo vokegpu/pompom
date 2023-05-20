@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2021 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -35,7 +35,7 @@
 
        fxc /T ps_2_0 /Fo"<OUTPUT FILE>" "<INPUT FILE>"
 
-   EKShader object code was converted to a list of DWORDs via the following
+   Shader object code was converted to a list of DWORDs via the following
    *nix style command (available separately from Windows + MSVC):
 
      hexdump -v -e '6/4 "0x%08.8x, " "\n"' <FILE>

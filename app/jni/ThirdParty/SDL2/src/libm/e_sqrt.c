@@ -247,7 +247,7 @@ A.  sqrt(x) by Newton Iteration
 	leading 32-bit word is y0, the value of its trailing word is 0)
 	approximates sqrt(x) to almost 8-bit.
 
-	Tag of T1:
+	Value of T1:
 	static int T1[32]= {
 	0,	1024,	3062,	5746,	9193,	13348,	18162,	23592,
 	29598,	36145,	43202,	50740,	58733,	67158,	75992,	85215,
@@ -342,7 +342,7 @@ B.  sqrt(x) by Reciproot Iteration
 	its trailing word y1 is set to zero) approximates 1/sqrt(x)
 	to almost 7.8-bit.
 
-	Tag of T2:
+	Value of T2:
 	static int T2[64]= {
 	0x1500,	0x2ef8,	0x4d67,	0x6b02,	0x87be,	0xa395,	0xbe7a,	0xd866,
 	0xf14a,	0x1091b,0x11fcd,0x13552,0x14999,0x15c98,0x16e34,0x17e5f,
