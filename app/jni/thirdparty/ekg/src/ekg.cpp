@@ -13,7 +13,7 @@
  */
 
 #include "ekg/ekg.hpp"
-#include "ekg/cpu/info.hpp"
+#include "ekg/os/info.hpp"
 
 ekg::runtime* ekg::core {nullptr};
 std::string ekg::gl_version {"#version 450"};

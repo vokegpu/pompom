@@ -13,7 +13,7 @@
  */
 
 #include "ekg/gpu/gl.hpp"
-#include "ekg/cpu/info.hpp"
+#include "ekg/os/info.hpp"
 #include "ekg/util/env.hpp"
 #include <vector>
 

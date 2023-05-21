@@ -60,7 +60,7 @@ void ekg::service::theme::gen_default_theme() {
     this->popup_background = {53, 61, 81, 255};
     this->popup_outline = {30, 40, 60, 100};
     this->popup_highlight = {44, 166, 255, 50};
-    this->popup_drop_animation_delay = 120.6666f;
+    this->popup_drop_animation_delay = 120;
 
     this->textbox_string = {2, 7, 22, 255};
     this->textbox_background = {202, 207, 222, 255};

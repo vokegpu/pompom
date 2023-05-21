@@ -20,6 +20,9 @@ int32_t main(int32_t, char**) {
     glViewport(0, 0, sdldisplaymode.w, sdldisplaymode.h);
     SDL_GL_MakeCurrent(psdlwin, sdlglcontext);
 
+    ekg::gl_version = "";
+    ekg::init(psdlwin, "./pompom/Whitney-Font");
+
     while (running) {
         while (SDL_PollEvent(&sdlevent)) {
             switch (sdlevent.type) {
@@ -38,7 +41,7 @@ int32_t main(int32_t, char**) {
             }
         }
 
-        glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         SDL_GL_SwapWindow(psdlwin);
