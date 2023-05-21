@@ -1,6 +1,4 @@
-#include <iostream>
-#include "SDL.h"
-#include <GLES3/gl3.h>
+#include "ekg/ekg.hpp"
 
 int32_t main(int32_t, char**) {
     SDL_Init(SDL_INIT_VIDEO);
@@ -31,7 +29,6 @@ int32_t main(int32_t, char**) {
                 }
 
                 case SDL_FINGERUP: {
-                    running = false;
                     break;
                 }
 
@@ -41,7 +38,7 @@ int32_t main(int32_t, char**) {
             }
         }
 
-        glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
+        glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         SDL_GL_SwapWindow(psdlwin);

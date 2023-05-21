@@ -14,6 +14,7 @@
 
 #include "ekg/draw/font.hpp"
 #include "ekg/util/env.hpp"
+#include "ekg/cpu/info.hpp"
 
 FT_Library ekg::draw::font_renderer::ft_library {};
 
@@ -106,19 +107,22 @@ void ekg::draw::font_renderer::reload() {
         glDeleteTextures(1, &this->texture);
     }
 
+    auto internal_format {GL_RED};
+    if (ekg::os == ekg::platform::os_android) {
+        internal_format = GL_RGBA;
+    }
+
     glGenTextures(1, &this->texture);
     glBindTexture(GL_TEXTURE_2D, this->texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, (GLint) this->full_width, (GLint) this->full_height, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, (GLint) this->full_width, (GLint) this->full_height, 0, internal_format, GL_UNSIGNED_BYTE, nullptr);
 
     float offset {};
-
     for (char32_t char_codes {}; char_codes < 256; char_codes++) {
         if (FT_Load_Char(this->ft_face, char_codes, FT_LOAD_RENDER)) {
             continue;
         }
 
         ekg::char_data &char_data {this->allocated_char_data[char_codes]};
-
         char_data.x = offset / static_cast<float>(this->full_width);
         char_data.w = static_cast<float>(this->ft_glyph_slot->bitmap.width);
         char_data.h = static_cast<float>(this->ft_glyph_slot->bitmap.rows);
@@ -131,15 +135,16 @@ void ekg::draw::font_renderer::reload() {
         offset += char_data.w;
     }
 
+#if defined(__ANDROID__)
+#else
     GLint swizzle_format[] {GL_ZERO, GL_ZERO, GL_ZERO, GL_RED};
 
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
+    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle_format);
+#endif
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle_format);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 

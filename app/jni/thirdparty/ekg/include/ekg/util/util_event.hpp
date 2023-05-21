@@ -17,8 +17,8 @@
 
 #include "ekg/util/env.hpp"
 #include "ekg/cpu/event.hpp"
+#include "ekg/os/ekg_sdl.hpp"
 #include <iostream>
-#include <SDL2/SDL.h>
 
 namespace ekg {
     void dispatch(ekg::cpu::event*);
