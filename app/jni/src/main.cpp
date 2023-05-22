@@ -1,4 +1,5 @@
 #include "ekg/ekg.hpp"
+#include "catandroidassetmanager.hpp"
 
 int32_t main(int32_t, char**) {
     SDL_Init(SDL_INIT_VIDEO);
@@ -20,8 +21,14 @@ int32_t main(int32_t, char**) {
     glViewport(0, 0, sdldisplaymode.w, sdldisplaymode.h);
     SDL_GL_MakeCurrent(psdlwin, sdlglcontext);
 
-    ekg::gl_version = "";
-    ekg::init(psdlwin, "./pompom/Whitney-Font");
+    std::string androidinternalpath {SDL_AndroidGetInternalStoragePath()};
+    ekg::gl_version = "#version 300 es \nprecision highp float;";
+    ekg::init(psdlwin, androidinternalpath + "/Whitney-Black.ttf");
+    ekg::log() << androidinternalpath;
+
+    auto frame = ekg::frame("Hello", {20, 20}, {500, 500});
+    frame->set_resize(ekg::dock::left | ekg::dock::bottom | ekg::dock::right);
+    frame->set_drag(ekg::dock::top);
 
     while (running) {
         while (SDL_PollEvent(&sdlevent)) {
@@ -31,18 +38,18 @@ int32_t main(int32_t, char**) {
                     break;
                 }
 
-                case SDL_FINGERUP: {
-                    break;
-                }
-
                 default: {
+                    ekg::event(sdlevent);
                     break;
                 }
             }
         }
 
-        glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
+        glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        ekg::update();
+        ekg::render();
 
         SDL_GL_SwapWindow(psdlwin);
         SDL_Delay(frameratethreadelay);
