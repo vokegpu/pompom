@@ -3,13 +3,17 @@
 
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
+#include <iostream>
 
 namespace cat {
     extern JNIEnv *pjnienv;
 
     struct asset {
+    public:
         static AAssetManager *pmanager;
-        static void extract();
+        static std::string internalpath;
+        static std::string abs(std::string_view filename);
+        static bool extract(std::string_view assetdir, std::string_view assetfilename);
     };
 
     void init();

@@ -21,14 +21,23 @@ int32_t main(int32_t, char**) {
     glViewport(0, 0, sdldisplaymode.w, sdldisplaymode.h);
     SDL_GL_MakeCurrent(psdlwin, sdlglcontext);
 
-    std::string androidinternalpath {SDL_AndroidGetInternalStoragePath()};
+    cat::init();
+    if (cat::asset::extract("/pompom", "/Whitney-Black.ttf")) {
+        ekg::log() << "Failed to extract pompom file ttf";
+    } else {
+        ekg::log() << "!!! extracteddd pompom file ttf";
+    }
+
     ekg::gl_version = "#version 300 es \nprecision highp float;";
-    ekg::init(psdlwin, androidinternalpath + "/Whitney-Black.ttf");
-    ekg::log() << androidinternalpath;
+    ekg::init(psdlwin, cat::asset::abs("/Whitney-Black.ttf"));
 
     auto frame = ekg::frame("Hello", {20, 20}, {500, 500});
     frame->set_resize(ekg::dock::left | ekg::dock::bottom | ekg::dock::right);
     frame->set_drag(ekg::dock::top);
+
+    auto frame2 = ekg::frame("pompom", {20, 600}, {500, 500});
+    frame2->set_resize(ekg::dock::left | ekg::dock::bottom | ekg::dock::right);
+    frame2->set_drag(ekg::dock::top);
 
     while (running) {
         while (SDL_PollEvent(&sdlevent)) {

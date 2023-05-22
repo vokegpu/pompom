@@ -19,4 +19,4 @@ include_directories(thirdparty/ekg/include)
 file(GLOB_RECURSE POMPOM_SOURCE_FILES "src/*.cpp")
 
 add_library(main SHARED ${POMPOM_SOURCE_FILES})
-target_link_libraries(main SDL2 GLESv3 ekg freetype log)
+target_link_libraries(main SDL2 GLESv3 ekg freetype log android)
