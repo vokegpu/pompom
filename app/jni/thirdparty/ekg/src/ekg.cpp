@@ -47,10 +47,10 @@ void ekg::init(SDL_Window* root, std::string_view font_path) {
 
 #if defined(_WIN)
     ekg::os = {ekg::platform::os_win};
-#elif defined(__linux__)
-    ekg::os = {ekg::platform::os_linux};
 #elif defined(__ANDROID__)
     ekg::os = {ekg::platform::os_android};
+#elif defined(__linux__)
+    ekg::os = {ekg::platform::os_linux};
 #endif
 
     const std::string vsh_src {

@@ -109,7 +109,7 @@ void ekg::draw::font_renderer::reload() {
 
     auto internal_format {GL_RED};
     if (ekg::os == ekg::platform::os_android) {
-        internal_format = GL_RGBA;
+        internal_format = GL_ALPHA;
     }
 
     glGenTextures(1, &this->texture);
@@ -131,7 +131,7 @@ void ekg::draw::font_renderer::reload() {
         char_data.top = static_cast<float>(this->ft_glyph_slot->bitmap_top);
         char_data.wsize = static_cast<float>(this->ft_glyph_slot->advance.x >> 6);
 
-        glTexSubImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(offset), 0, static_cast<GLsizei>(char_data.w), static_cast<GLsizei>(char_data.h), GL_RED, GL_UNSIGNED_BYTE, this->ft_glyph_slot->bitmap.buffer);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(offset), 0, static_cast<GLsizei>(char_data.w), static_cast<GLsizei>(char_data.h), internal_format, GL_UNSIGNED_BYTE, this->ft_glyph_slot->bitmap.buffer);
         offset += char_data.w;
     }
 

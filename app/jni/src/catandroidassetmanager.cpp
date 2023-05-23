@@ -9,6 +9,7 @@ std::string cat::asset::internalpath {};
 void cat::init() {
     cat::pjnienv = (JNIEnv*) SDL_AndroidGetJNIEnv();
 
+
     jobject activy {(jobject) SDL_AndroidGetActivity()};
     jclass activyclass {cat::pjnienv->GetObjectClass(activy)};
 
@@ -27,7 +28,7 @@ std::string cat::asset::abs(std::string_view filename) {
 
 bool cat::asset::extract(std::string_view assetdir, std::string_view assetfilename) {
     std::string path {}; path += assetdir; path += assetfilename;
-    ekg::log() << path;
+    ekg::log() << path << " " << (cat::asset::pmanager == nullptr);
 
     AAsset *passet {AAssetManager_open(cat::asset::pmanager, path.c_str(), AASSET_MODE_BUFFER)};
     if (passet == nullptr) {

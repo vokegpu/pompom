@@ -22,22 +22,24 @@ int32_t main(int32_t, char**) {
     SDL_GL_MakeCurrent(psdlwin, sdlglcontext);
 
     cat::init();
-    if (cat::asset::extract("/pompom", "/Whitney-Black.ttf")) {
+    if (cat::asset::extract("pompom/", "Whitney-Black.ttf")) {
         ekg::log() << "Failed to extract pompom file ttf";
     } else {
         ekg::log() << "!!! extracteddd pompom file ttf";
     }
 
     ekg::gl_version = "#version 300 es \nprecision highp float;";
-    ekg::init(psdlwin, cat::asset::abs("/Whitney-Black.ttf"));
-
-    auto frame = ekg::frame("Hello", {20, 20}, {500, 500});
-    frame->set_resize(ekg::dock::left | ekg::dock::bottom | ekg::dock::right);
-    frame->set_drag(ekg::dock::top);
+    ekg::init(psdlwin, cat::asset::abs("Whitney-Black.ttf"));
 
     auto frame2 = ekg::frame("pompom", {20, 600}, {500, 500});
     frame2->set_resize(ekg::dock::left | ekg::dock::bottom | ekg::dock::right);
     frame2->set_drag(ekg::dock::top);
+
+    ekg::label("EKG running on Android NDK", ekg::dock::fill);
+    ekg::button("Press here if you love cats", ekg::dock::fill | ekg::dock::next);
+    ekg::button("Pom Pom", ekg::dock::next);
+    ekg::slider("Sliderrr", -200.0f, -300.0f, 300.0f);
+    ekg::textbox("Pompom", "gi", ekg::dock::fill | ekg::dock::next)->set_scaled_height(32);
 
     while (running) {
         while (SDL_PollEvent(&sdlevent)) {
