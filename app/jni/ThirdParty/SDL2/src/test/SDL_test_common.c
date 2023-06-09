@@ -1552,7 +1552,7 @@ SDLTest_PrintEvent(SDL_Event * event)
         }
         break;
     case SDL_KEYDOWN:
-        SDL_Log("SDL EVENT: Keyboard: key pressed  in window %" SDL_PRIu32 ": scancode 0x%08X = %s, keycode 0x%08" SDL_PRIX32 " = %s",
+        SDL_Log("SDL EVENT: Keyboard: key action  in window %" SDL_PRIu32 ": scancode 0x%08X = %s, keycode 0x%08" SDL_PRIX32 " = %s",
                 event->key.windowID,
                 event->key.keysym.scancode,
                 SDL_GetScancodeName(event->key.keysym.scancode),
@@ -1583,7 +1583,7 @@ SDLTest_PrintEvent(SDL_Event * event)
                 event->motion.windowID);
         break;
     case SDL_MOUSEBUTTONDOWN:
-        SDL_Log("SDL EVENT: Mouse: button %d pressed at %" SDL_PRIs32 ",%" SDL_PRIs32 " with click count %d in window %" SDL_PRIu32,
+        SDL_Log("SDL EVENT: Mouse: button %d action at %" SDL_PRIs32 ",%" SDL_PRIs32 " with click count %d in window %" SDL_PRIu32,
                 event->button.button, event->button.x, event->button.y, event->button.clicks,
                 event->button.windowID);
         break;
@@ -1646,7 +1646,7 @@ SDLTest_PrintEvent(SDL_Event * event)
         }
         break;
     case SDL_JOYBUTTONDOWN:
-        SDL_Log("SDL EVENT: Joystick %" SDL_PRIs32 ": button %d pressed",
+        SDL_Log("SDL EVENT: Joystick %" SDL_PRIs32 ": button %d action",
                 event->jbutton.which, event->jbutton.button);
         break;
     case SDL_JOYBUTTONUP:

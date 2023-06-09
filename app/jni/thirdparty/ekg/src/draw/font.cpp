@@ -97,8 +97,13 @@ void ekg::draw::font_renderer::reload() {
     }
 	
     this->text_height = this->full_height;
-    this->offset_text_height = (this->text_height / 6) / 2;
-    this->text_height += this->offset_text_height;
+    this->offset_text_height = (this->text_height / 6.0f) / 2.0f;
+
+    /*
+     * A common issue with rendering overlay elements is flot32 imprecision, for this reason
+     * the cast float32 to int32 is necessary.
+     */
+    this->text_height += static_cast<int32_t>(this->offset_text_height);
 
     /* Phase of getting chars metric_list. */
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -107,6 +112,12 @@ void ekg::draw::font_renderer::reload() {
         glDeleteTextures(1, &this->texture);
     }
 
+
+    /*
+     * Android does not support GL_RED, perharps because of the archtecture of GPU.
+     * For this reason, the internal format and format is GL_ALPHA ans not GL_RED.
+     * Also both of internal format, and format is the same.
+     */
     auto internal_format {GL_RED};
     if (ekg::os == ekg::platform::os_android) {
         internal_format = GL_ALPHA;
@@ -129,12 +140,13 @@ void ekg::draw::font_renderer::reload() {
 
         char_data.left = static_cast<float>(this->ft_glyph_slot->bitmap_left);
         char_data.top = static_cast<float>(this->ft_glyph_slot->bitmap_top);
-        char_data.wsize = static_cast<float>(this->ft_glyph_slot->advance.x >> 6);
+        char_data.wsize = static_cast<float>(static_cast<int32_t>(this->ft_glyph_slot->advance.x >> 6));
 
         glTexSubImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(offset), 0, static_cast<GLsizei>(char_data.w), static_cast<GLsizei>(char_data.h), internal_format, GL_UNSIGNED_BYTE, this->ft_glyph_slot->bitmap.buffer);
         offset += char_data.w;
     }
 
+    // GLES 3 does not support swizzle function, the format GL_ALPHA supply this issue.
 #if defined(__ANDROID__)
 #else
     GLint swizzle_format[] {GL_ZERO, GL_ZERO, GL_ZERO, GL_RED};
@@ -143,8 +155,9 @@ void ekg::draw::font_renderer::reload() {
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle_format);
 #endif
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -167,28 +180,37 @@ void ekg::draw::font_renderer::blit(std::string_view text, float x, float y, con
     data.shape_rect[2] = static_cast<float>(ekg::concave);
     data.shape_rect[3] = static_cast<float>(ekg::concave);
 
-    data.material_color[0] = static_cast<uint8_t>(color.x);
-    data.material_color[1] = static_cast<uint8_t>(color.y);
-    data.material_color[2] = static_cast<uint8_t>(color.z);
-    data.material_color[3] = static_cast<uint8_t>(color.w);
+    data.material_color[0] = color.x;
+    data.material_color[1] = color.y;
+    data.material_color[2] = color.z;
+    data.material_color[3] = color.w;
 
     ekg::rect vertices {};
     ekg::rect coordinates {};
     ekg::char_data char_data {};
 
-    x = 0;
-    y = 0;
+    x = 0.0f;
+    y = 0.0f;
 
     data.factor = 1;
-
     char32_t ui32char {};
     uint8_t ui8char {};
     std::string utf8string {};
-    size_t stringsize {};
+
+    bool break_text {};
+    bool r_n_break_text {};
 
     for (size_t it {}; it < text.size(); it++) {
         ui8char = static_cast<uint8_t>(text.at(it));
         it += ekg::utf8checksequence(ui8char, ui32char, utf8string, text, it);
+
+        break_text = ui8char == '\n';
+        if (break_text || (r_n_break_text = (ui8char == '\r' && it < text.size() && text.at(it + 1) == '\n'))) {
+            it += static_cast<uint64_t>(r_n_break_text);
+            y += this->text_height;
+            x = 0.0f;
+            continue;
+        }
 
         if (this->ft_bool_kerning && this->ft_uint_previous) {
             FT_Get_Kerning(this->ft_face, this->ft_uint_previous, ui32char, 0, &this->ft_vector_previous_char);

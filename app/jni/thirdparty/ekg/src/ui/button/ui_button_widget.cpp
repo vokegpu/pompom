@@ -32,13 +32,11 @@ void ekg::ui::button_widget::on_reload() {
     float text_width {f_renderer.get_text_width(ui->get_text())};
     float text_height {f_renderer.get_text_height()};
 
-    float dimension_offset {text_height / 2};
+    float dimension_offset {static_cast<float>((int32_t) (text_height / 2.0f))};
     float offset {ekg::find_min_offset(text_width, dimension_offset)};
 
     this->dimension.w = ekg::min(this->dimension.w, text_height);
     this->dimension.h = (text_height + dimension_offset) * static_cast<float>(ui->get_scaled_height());
-
-    this->min_size.x = ekg::min(this->min_size.x, text_height);
     this->min_size.y = ekg::min(this->min_size.y, this->dimension.h);
 
     this->rect_text.w = text_width;
@@ -50,7 +48,7 @@ void ekg::ui::button_widget::on_reload() {
     layout.process_layout_mask();
 
     auto &layout_mask {layout.get_layout_mask()};
-    this->dimension.w = this->dimension.w <= text_height ? layout_mask.w : this->dimension.w;
+    this->dimension.w = (int32_t)(this->dimension.w <= text_height ? layout_mask.w : this->dimension.w);
     this->dimension.h = ekg::min(this->dimension.h, layout_mask.h);
 }
 
@@ -68,14 +66,15 @@ void ekg::ui::button_widget::on_event(SDL_Event &sdl_event) {
         ekg::set(this->flag.highlight, this->flag.hovered);
     }
 
-    if (pressed && !this->flag.activy && this->flag.hovered && ekg::input::pressed("button-activy")) {
+    if (pressed && !this->flag.activy && this->flag.hovered && ekg::input::action("button-activy")) {
         ekg::set(this->flag.activy, true);
     } else if (released && this->flag.activy) {
         auto ui {(ekg::ui::button*) this->data};
         ui->set_value(this->flag.hovered);
 
-        if (ui->get_value() && ui->get_callback() != nullptr) {
-            ekg::dispatch(ui->get_callback());
+        auto callback {ui->get_callback()};
+        if (ui->get_value() && callback != nullptr) {
+            ekg::dispatch(callback);
             ui->set_value(false);
         }
 

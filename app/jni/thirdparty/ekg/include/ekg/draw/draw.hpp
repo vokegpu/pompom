@@ -10,7 +10,7 @@
  * 6- Do not modify this license under any instance.
  *
  * @VokeGpu 2023 all rights reserved.
- */
+*/
 
 #ifndef EKG_DRAW_H
 #define EKG_DRAW_H
@@ -45,9 +45,7 @@ namespace ekg {
         void sync_scissor_pos(float, float);
         void bind_scissor(int32_t);
         void bind_off_scissor();
-
-        void bind_animation(int32_t);
-        void bind_off_animation();
+        bool is_visible(int32_t, ekg::vec4&);
     }
 }
 

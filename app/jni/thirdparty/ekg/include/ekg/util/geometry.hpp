@@ -57,12 +57,12 @@ namespace ekg {
     typedef struct vec2 {
         union {
             struct {
-                float x;
-                float y;
+                float x {};
+                float y {};
             };
         };
 
-        inline vec2() = default;
+        inline explicit vec2() {};
         inline vec2(float _x, float _y) {
             this->x = _x;
             this->y = _y;
@@ -74,13 +74,13 @@ namespace ekg {
     typedef struct vec3 {
         union {
             struct {
-                float x;
-                float y;
-                float z;
+                float x {};
+                float y {};
+                float z {};
             };
         };
 
-        inline vec3() = default;
+        inline explicit vec3() {};
         inline vec3(float _x, float _y, float _z) {
             this->x = _x;
             this->y = _y;
@@ -91,16 +91,14 @@ namespace ekg {
     typedef struct vec4 {
         union {
             struct {
-                float x;
-                float y;
-                float z;
-                float w;
+                float x {};
+                float y {};
+                float z {};
+                float w {};
             };
-
-            float data[4];
         };
 
-        inline vec4() = default;
+        inline explicit vec4() {};
         inline vec4(float _x, float _y, float _z, float _w) {
             this->x = _x;
             this->y = _y;
@@ -140,16 +138,14 @@ namespace ekg {
     typedef struct rect {
         union {
             struct {
-                float x;
-                float y;
-                float w;
-                float h;
+                float x {};
+                float y {};
+                float w {};
+                float h {};
             };
-
-            float data[4] {};
         };
 
-        inline rect() = default;
+        inline explicit rect() {};
         inline rect(float _x, float _y, float _w, float _h) {
             this->x = _x;
             this->y = _y;
@@ -187,6 +183,16 @@ namespace ekg {
 
     ekg::rect operator-(const ekg::rect &l, const ekg::rect &r);
     ekg::rect operator+(const ekg::rect &l, const ekg::rect &r);
+
+    ekg::rect operator-(const ekg::rect &l, const ekg::vec4 &r);
+    ekg::rect operator+(const ekg::rect &l, const ekg::vec4 &r);
+
+    ekg::vec4 operator-(const ekg::vec4 &l, const ekg::vec4 &r);
+    ekg::vec4 operator+(const ekg::vec4 &l, const ekg::vec4 &r);
+
+    ekg::vec4 operator-(const ekg::vec4 &l, const ekg::rect &r);
+    ekg::vec4 operator+(const ekg::vec4 &l, const ekg::rect &r);
+    ekg::vec4 operator/(const ekg::vec4 &l, float r);
 
     struct docker {
         ekg::rect left {}, right {}, top {}, bottom {}, center {}, rect {};
@@ -227,6 +233,7 @@ namespace ekg {
 
     int64_t min(int64_t, int64_t);
     int64_t max(int64_t, int64_t);
+    ekg::vec4 color(int32_t, int32_t, int32_t, int32_t);
 
     float min(float, float);
     float max(float, float);

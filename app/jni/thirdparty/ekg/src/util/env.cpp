@@ -19,9 +19,10 @@
 #include <fstream>
 
 bool ekg::debug {};
-float ekg::scrollsmooth {0.2f};
+float ekg::scrollsmooth {18.0f};
 int32_t ekg::hovered::id {};
 ekg::type ekg::hovered::type {};
+std::string ekg::log::cache {};
 
 size_t ekg::utf8checksequence(uint8_t &ui8char, char32_t &ui32char, std::string &utf8string, std::string_view stringtext, size_t it) {
     if (ui8char <= 0x7F) {
@@ -257,7 +258,7 @@ bool ekg::reset(ekg::timing &timing) {
 }
 
 float ekg::lerp(float a, float b, float dt) {
-    if (dt < 0 || dt >= 1) {
+    if (dt < 0.0f || dt >= 1.0f) {
         return b;
     }
 
@@ -293,7 +294,7 @@ std::string ekg::string_float_precision(float n, int32_t precision) {
     return string.substr(0, ekg::max((int32_t) (string.find('.') + precision + (1 * precision)), (int32_t) string.size()));
 }
 
-bool ekg::input::pressed(std::string_view key_input) {
+bool ekg::input::action(std::string_view key_input) {
     return ekg::core->get_service_input().pressed(key_input);
 }
 

@@ -1296,7 +1296,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
     public static boolean isTextInputEvent(KeyEvent event) {
 
-        // Key pressed with Ctrl should be sent as SDL_KEYDOWN/SDL_KEYUP and not SDL_TEXTINPUT
+        // Key action with Ctrl should be sent as SDL_KEYDOWN/SDL_KEYUP and not SDL_TEXTINPUT
         if (event.isCtrlPressed()) {
             return false;
         }

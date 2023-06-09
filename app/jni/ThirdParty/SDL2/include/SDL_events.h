@@ -95,7 +95,7 @@ typedef enum
     SDL_SYSWMEVENT,             /**< System specific event */
 
     /* Keyboard events */
-    SDL_KEYDOWN        = 0x300, /**< Key pressed */
+    SDL_KEYDOWN        = 0x300, /**< Key action */
     SDL_KEYUP,                  /**< Key released */
     SDL_TEXTEDITING,            /**< Keyboard text editing (composition) */
     SDL_TEXTINPUT,              /**< Keyboard text input */
@@ -106,7 +106,7 @@ typedef enum
 
     /* Mouse events */
     SDL_MOUSEMOTION    = 0x400, /**< Mouse moved */
-    SDL_MOUSEBUTTONDOWN,        /**< Mouse button pressed */
+    SDL_MOUSEBUTTONDOWN,        /**< Mouse button action */
     SDL_MOUSEBUTTONUP,          /**< Mouse button released */
     SDL_MOUSEWHEEL,             /**< Mouse wheel motion */
 
@@ -114,7 +114,7 @@ typedef enum
     SDL_JOYAXISMOTION  = 0x600, /**< Joystick axis motion */
     SDL_JOYBALLMOTION,          /**< Joystick trackball motion */
     SDL_JOYHATMOTION,           /**< Joystick hat position change */
-    SDL_JOYBUTTONDOWN,          /**< Joystick button pressed */
+    SDL_JOYBUTTONDOWN,          /**< Joystick button action */
     SDL_JOYBUTTONUP,            /**< Joystick button released */
     SDL_JOYDEVICEADDED,         /**< A new joystick has been inserted into the system */
     SDL_JOYDEVICEREMOVED,       /**< An opened joystick has been removed */
@@ -122,7 +122,7 @@ typedef enum
 
     /* Game controller events */
     SDL_CONTROLLERAXISMOTION  = 0x650, /**< Game controller axis motion */
-    SDL_CONTROLLERBUTTONDOWN,          /**< Game controller button pressed */
+    SDL_CONTROLLERBUTTONDOWN,          /**< Game controller button action */
     SDL_CONTROLLERBUTTONUP,            /**< Game controller button released */
     SDL_CONTROLLERDEVICEADDED,         /**< A new Game controller has been inserted into the system */
     SDL_CONTROLLERDEVICEREMOVED,       /**< An opened Game controller has been removed */
@@ -228,7 +228,7 @@ typedef struct SDL_KeyboardEvent
     Uint8 repeat;       /**< Non-zero if this is a key repeat */
     Uint8 padding2;
     Uint8 padding3;
-    SDL_Keysym keysym;  /**< The key that was pressed or released */
+    SDL_Keysym keysym;  /**< The key that was action or released */
 } SDL_KeyboardEvent;
 
 #define SDL_TEXTEDITINGEVENT_TEXT_SIZE (32)

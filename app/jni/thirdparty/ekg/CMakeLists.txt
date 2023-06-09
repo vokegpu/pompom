@@ -13,20 +13,23 @@
 #
 
 cmake_minimum_required(VERSION 3.9)
-project(ekg VERSION 1.0.0 DESCRIPTION "ui library")
+project(ekg VERSION 0.1.0 DESCRIPTION "ui library")
 message("-- Preparing EKG setup")
 
 # Maximum optimization
 add_compile_options(-O3)
-# add_compile_options(-std=c++17)
 
 if (WIN32)
     message("-- WIN32 platform detected!")
     set(LIBRARY_OUTPUT_PATH "../lib/win32/")
 elseif(ANDROID)
-    message("-- ANDROID platform detected!")
     set(LIBRARY_OUTPUT_PATH "${ANDROID_ABI}/")
+    message("-- ANDROID platform detected!")
 elseif(LINUX)
+    if (LINUX_NOT_FOUND_FREETYPE)
+        include_directories(/usr/include/freetype2)
+    endif()
+
     message("-- LINUX platform detected!")
     set(LIBRARY_OUTPUT_PATH "../lib/linux/")
 endif()
@@ -45,19 +48,18 @@ message("-- Configuring static lib")
 set_target_properties(ekg PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION 1)
 set_target_properties(ekg PROPERTIES PUBLIC_HEADER "${HEADER_FILES}")
 target_include_directories(ekg PUBLIC include/)
-
+ 
 message("-- Setting configure file")
 configure_file(ekg.pc.in "ekg.pc" @ONLY)
 
 message("-- Ending EKG CMake")
 install(TARGETS ekg LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(FILES ${CMAKE_BINARY_DIR}/ekg.pc DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
-
 message("-- Lib successfully created")
-set(ENABLE_TEST FALSE)
 
-if (ENABLE_TEST)
+if (EKG_ENABLE_TEST)
     project(ekg_ui_library)
+    message("-- Building EKG testing software...")
 
     if (WIN32)
         set(EXECUTABLE_OUTPUT_PATH ../test/build/win32/)
@@ -66,7 +68,7 @@ if (ENABLE_TEST)
     endif()
 
     add_compile_options(-O3)
-    add_compile_options(-std=c++17)
+    set(CMAKE_CXX_STANDART 20)
 
     include_directories(./include/)
     add_executable(ekg_ui_library "test/src/main.cpp")

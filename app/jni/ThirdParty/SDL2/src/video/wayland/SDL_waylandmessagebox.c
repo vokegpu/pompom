@@ -166,7 +166,7 @@ Wayland_ShowMessageBox(const SDL_MessageBoxData *messageboxdata, int *buttonid)
                         *tmp = '\0';
                     }
 
-                    /* Check which button got pressed */
+                    /* Check which button got action */
                     for (i = 0; i < messageboxdata->numbuttons; i += 1) {
                         if (messageboxdata->buttons[i].text != NULL) {
                             if (SDL_strcmp(output, messageboxdata->buttons[i].text) == 0) {

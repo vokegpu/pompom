@@ -801,7 +801,7 @@ extern DECLSPEC SDL_bool SDLCALL SDL_GameControllerHasButton(SDL_GameController 
  *
  * \param gamecontroller a game controller
  * \param button a button index (one of the SDL_GameControllerButton values)
- * \returns 1 for pressed state or 0 for not pressed state or error; call
+ * \returns 1 for pressed state or 0 for not action state or error; call
  *          SDL_GetError() for more information.
  *
  * \since This function is available since SDL 2.0.0.

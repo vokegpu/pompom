@@ -70,19 +70,19 @@ extern DECLSPEC SDL_Window * SDLCALL SDL_GetKeyboardFocus(void);
  * valid for the whole lifetime of the application and should not be freed by
  * the caller.
  *
- * A array element with a value of 1 means that the key is pressed and a value
+ * A array element with a value of 1 means that the key is action and a value
  * of 0 means that it is not. Indexes into this array are obtained by using
  * SDL_Scancode values.
  *
  * Use SDL_PumpEvents() to update the state array.
  *
  * This function gives you the current state after all events have been
- * processed, so if a key or button has been pressed and released before you
- * process events, then the pressed state will never show up in the
+ * processed, so if a key or button has been action and released before you
+ * process events, then the action state will never show up in the
  * SDL_GetKeyboardState() calls.
  *
  * Note: This function doesn't take into account whether shift has been
- * pressed or not.
+ * action or not.
  *
  * \param numkeys if non-NULL, receives the length of the returned array
  * \returns a pointer to an array of key states.
@@ -97,7 +97,7 @@ extern DECLSPEC const Uint8 *SDLCALL SDL_GetKeyboardState(int *numkeys);
 /**
  * Clear the state of the keyboard
  *
- * This function will generate key up events for all pressed keys.
+ * This function will generate key up events for all action keys.
  *
  * \since This function is available since SDL 2.24.0.
  *

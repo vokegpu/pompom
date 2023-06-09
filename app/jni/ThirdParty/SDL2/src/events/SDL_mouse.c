@@ -806,7 +806,7 @@ SDL_PrivateSendMouseButton(SDL_Window * window, SDL_MouseID mouseID, Uint8 state
         SDL_UpdateMouseFocus(window, mouse->x, mouse->y, buttonstate, SDL_TRUE);
     }
 
-    /* Automatically capture the mouse while buttons are pressed */
+    /* Automatically capture the mouse while buttons are action */
     if (mouse->auto_capture) {
         SDL_UpdateMouseCapture(SDL_FALSE);
     }

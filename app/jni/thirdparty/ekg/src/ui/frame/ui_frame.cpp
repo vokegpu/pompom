@@ -16,6 +16,16 @@
 #include "ekg/util/util_event.hpp"
 #include "ekg/util/util_ui.hpp"
 
+void ekg::ui::frame::set_place(uint16_t _dock) {
+    if (this->dock_flags != _dock) {
+        this->dock_flags = _dock;
+
+        ekg::reload(this->id);
+        ekg::synclayout(this->id);
+        ekg::scissor(this->id);
+    }
+}
+
 void ekg::ui::frame::set_scale_factor(float x, float y) {
     this->scale_factor.x = x;
     this->scale_factor.y = y;
@@ -59,14 +69,6 @@ ekg::vec2 ekg::ui::frame::get_size_initial() {
 	return {this->rect_initial.w, this->rect_initial.h};
 }
 
-void ekg::ui::frame::set_embed(uint16_t dock) {
-	this->dock_embed = dock;
-}
-
-uint16_t ekg::ui::frame::get_embed_dock() {
-	return this->dock_embed;
-}
-
 void ekg::ui::frame::set_size(float w, float h) {
     if (this->sync_ui.w != w || this->sync_ui.h != h) {
         this->sync_ui.w = w;
@@ -74,7 +76,9 @@ void ekg::ui::frame::set_size(float w, float h) {
 
         ekg::bitwise::add(this->sync_flags, (uint16_t) ekg::uisync::dimension);
         ekg::reload(this->id);
-        ekg::scissor(this->parent_id);
+        ekg::synclayout(this->id);
+        ekg::scissor(this->id);
+        ekg::dispatch(ekg::env::redraw);
     }
 }
 
@@ -88,8 +92,9 @@ void ekg::ui::frame::set_pos(float x, float y) {
         this->sync_ui.y = y;
 
         ekg::bitwise::add(this->sync_flags, (uint16_t) ekg::uisync::dimension);
+        ekg::scissor(this->id);
         ekg::reload(this->id);
-        ekg::scissor(this->parent_id);
+        ekg::dispatch(ekg::env::redraw);
     }
 }
 
@@ -119,7 +124,9 @@ void ekg::ui::frame::set_width(float width) {
 
         ekg::bitwise::add(this->sync_flags, (uint16_t) ekg::uisync::dimension);
         ekg::reload(this->id);
-        ekg::scissor(this->parent_id);
+        ekg::synclayout(this->id);
+        ekg::scissor(this->id);
+        ekg::dispatch(ekg::env::redraw);
     }
 }
 
@@ -133,7 +140,9 @@ void ekg::ui::frame::set_height(float height) {
 
         ekg::bitwise::add(this->sync_flags, (uint16_t) ekg::uisync::dimension);
         ekg::reload(this->id);
-        ekg::scissor(this->parent_id);
+        ekg::synclayout(this->id);
+        ekg::scissor(this->id);
+        ekg::dispatch(ekg::env::redraw);
     }
 }
 

@@ -26,6 +26,10 @@
 #include "ekg/ui/slider/ui_slider.hpp"
 #include "ekg/ui/popup/ui_popup.hpp"
 #include "ekg/ui/textbox/ui_textbox.hpp"
+#include "ekg/ui/scroll/ui_scroll.hpp"
+
+#define EKG_VERSION_ID "0.0.1"
+#define EKG_VERSION_STATE "ALPHA"
 
 namespace ekg {
     /*
@@ -80,7 +84,12 @@ namespace ekg {
     /*
      * Create frame UI.
      */
-    ekg::ui::frame *frame(std::string_view, const ekg::vec2&, ekg::vec2 = {75, 75});
+    ekg::ui::frame *frame(std::string_view, const ekg::vec2&, const ekg::vec2&);
+
+    /*
+     * Create embedded frame UI.
+     */
+    ekg::ui::frame *frame(std::string_view, const ekg::vec2&, uint16_t = ekg::dock::none);
 
     /*
      * Create button UI.
@@ -95,7 +104,7 @@ namespace ekg {
     /*
      * Create checkbox UI.
      */
-    ekg::ui::checkbox *checkbox(std::string_view, uint16_t = ekg::dock::none);
+    ekg::ui::checkbox *checkbox(std::string_view, bool, uint16_t = ekg::dock::none);
 
     /*
      * Create slider UI.
@@ -111,6 +120,11 @@ namespace ekg {
      * Create textbox UI.
      */
     ekg::ui::textbox *textbox(std::string_view, std::string_view, uint16_t = ekg::dock::none);
+
+    /*
+     * Create scroll UI.
+     */
+    ekg::ui::scroll *scroll(std::string_view);
 
     /*
      * Stop collecting UIs to group.

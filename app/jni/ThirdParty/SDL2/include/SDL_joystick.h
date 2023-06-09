@@ -914,7 +914,7 @@ extern DECLSPEC int SDLCALL SDL_JoystickGetBall(SDL_Joystick *joystick,
  * \param joystick an SDL_Joystick structure containing joystick information
  * \param button the button index to get the state from; indices start at
  *               index 0
- * \returns 1 if the specified button is pressed, 0 otherwise.
+ * \returns 1 if the specified button is action, 0 otherwise.
  *
  * \since This function is available since SDL 2.0.0.
  *

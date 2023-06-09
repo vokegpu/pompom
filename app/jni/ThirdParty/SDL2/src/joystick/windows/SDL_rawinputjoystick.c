@@ -1752,7 +1752,7 @@ RAWINPUT_UpdateOtherAPIs(SDL_Joystick *joystick)
                     }
                     ctx->xinput_correlation_id = correlation_id;
                 } else {
-                    /* Match multiple XInput devices, or none (possibly due to no buttons pressed) */
+                    /* Match multiple XInput devices, or none (possibly due to no buttons action) */
                 }
             }
             ctx->xinput_correlation_count = new_correlation_count;

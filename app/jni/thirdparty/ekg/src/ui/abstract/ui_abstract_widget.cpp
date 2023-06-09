@@ -14,9 +14,12 @@
 
 #include "ekg/ui/abstract/ui_abstract_widget.hpp"
 #include "ekg/util/util_event.hpp"
+#include "ekg/draw/draw.hpp"
+#include "ekg/os/info.hpp"
 
 ekg::ui::abstract_widget::abstract_widget() {
-    this->parent = &this->empty;
+    this->parent = &this->empty_parent;
+    this->scroll = &this->empty_scroll;
 }
 
 ekg::ui::abstract_widget::~abstract_widget() {
@@ -35,7 +38,7 @@ void ekg::ui::abstract_widget::on_pre_event(SDL_Event &sdl_event) {
     if (ekg::input::pressed() || ekg::input::released() || ekg::input::motion() || ekg::input::wheel()) {
         auto &interact {ekg::interact()};
         auto &rect {this->get_abs_rect()};
-        this->flag.hovered = ekg::rect_collide_vec(rect, interact) && (this->data->get_type() == ekg::type::popup || this->data->get_parent_id() == 0 || ekg::rect_collide_vec(*this->parent, interact));
+        this->flag.hovered = ekg::rect_collide_vec(rect, interact) && (this->data->get_type() == ekg::type::popup || this->data->get_parent_id() == 0 || ekg::draw::is_visible(this->data->get_id(), interact));
     }
 }
 
@@ -45,6 +48,7 @@ void ekg::ui::abstract_widget::on_event(SDL_Event &sdl_event) {
 
 void ekg::ui::abstract_widget::on_post_event(SDL_Event &sdl_event) {
     this->flag.hovered = false;
+    this->flag.highlight = !(!this->flag.hovered && (ekg::os == ekg::platform::os_android && ekg::input::released())) && this->flag.highlight;
 }
 
 void ekg::ui::abstract_widget::on_update() {
@@ -55,6 +59,10 @@ void ekg::ui::abstract_widget::on_draw_refresh() {
 
 }
 
+ekg::rect ekg::ui::abstract_widget::get_static_rect() {
+    return this->dimension + *this->parent;
+}
+
 ekg::rect &ekg::ui::abstract_widget::get_abs_rect() {
-    return (this->data->widget() = this->dimension + *this->parent);
+    return (this->data->widget() = this->dimension + *this->parent + *this->scroll);
 }

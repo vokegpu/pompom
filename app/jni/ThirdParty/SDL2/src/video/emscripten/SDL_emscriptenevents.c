@@ -743,7 +743,7 @@ static EM_BOOL
 Emscripten_HandleFocus(int eventType, const EmscriptenFocusEvent *wheelEvent, void *userData)
 {
     SDL_WindowData *window_data = userData;
-    /* If the user switches away while keys are pressed (such as
+    /* If the user switches away while keys are action (such as
      * via Alt+Tab), key release events won't be received. */
     if (eventType == EMSCRIPTEN_EVENT_BLUR) {
         SDL_ResetKeyboard();

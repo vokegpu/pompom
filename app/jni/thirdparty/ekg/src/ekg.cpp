@@ -15,7 +15,7 @@
 #include "ekg/ekg.hpp"
 #include "ekg/os/info.hpp"
 
-ekg::runtime* ekg::core {nullptr};
+ekg::runtime* ekg::core {};
 std::string ekg::gl_version {"#version 450"};
 
 ekg::service::theme &ekg::theme() {
@@ -115,10 +115,10 @@ ekg::gl_version + "\n"
 "    }"
 
 "    if (shouldDiscard) {"
-"       discard;\n"
+"       vFragColor.w = 0.0f;\n"
 "    }\n"
 
-"    if (uActiveTexture) {"
+"    if (uActiveTexture && !shouldDiscard) {"
 "        vFragColor = texture(uTexture, vTexCoord);\n"
 "        vFragColor = vec4(vFragColor.xyz - ((1.0f - uColor.xyz) - 1.0f), vFragColor.w - (1.0f - uColor.w));\n"
 "    }\n"
@@ -190,6 +190,7 @@ void ekg::event(SDL_Event &sdl_event) {
                     ekg::gpu::allocator::program.setm4("uOrthographicMatrix", ekg::gpu::allocator::mat4x4orthographic);
                     ekg::gpu::allocator::program.set("uViewportHeight", static_cast<float>(ekg::display::height));
                     ekg::gpu::revoke();
+                    ekg::core->update_size_changed();
                     break;
                 }
             }
@@ -216,7 +217,7 @@ void ekg::render() {
     glEnable(GL_DEPTH_TEST);
 }
 
-ekg::ui::frame *ekg::frame(std::string_view tag, const ekg::vec2 &initial_position, ekg::vec2 size) {
+ekg::ui::frame *ekg::frame(std::string_view tag, const ekg::vec2 &initial_position, const ekg::vec2 &size) {
     auto ui {new ekg::ui::frame()};
     ui->set_tag(tag);
     ui->set_type(ekg::type::frame);
@@ -224,6 +225,21 @@ ekg::ui::frame *ekg::frame(std::string_view tag, const ekg::vec2 &initial_positi
 
     ui->set_pos_initial(initial_position.x, initial_position.y);
     ui->set_size_initial(size.x, size.y);
+    ui->ui() = {initial_position.x, initial_position.y, size.x, size.y};
+    ui->set_place(ekg::dock::none);
+
+    return ui;
+}
+
+ekg::ui::frame *ekg::frame(std::string_view tag, const ekg::vec2 &size, uint16_t dock) {
+    auto ui {new ekg::ui::frame()};
+    ui->set_tag(tag);
+    ui->set_type(ekg::type::frame);
+    ekg::core->gen_widget(ui);
+
+    ui->set_size_initial(size.x, size.y);
+    ui->ui() = {0.0f, 0.0f, size.x, size.y};
+    ui->set_place(dock);
 
     return ui;
 }
@@ -258,7 +274,7 @@ ekg::ui::label *ekg::label(std::string_view text, uint16_t dock) {
     return ui;
 }
 
-ekg::ui::checkbox *ekg::checkbox(std::string_view text, uint16_t dock) {
+ekg::ui::checkbox *ekg::checkbox(std::string_view text, bool value, uint16_t dock) {
     auto ui {new ekg::ui::checkbox()};
     ui->set_type(ekg::type::checkbox);
     ekg::core->gen_widget(ui);
@@ -270,6 +286,7 @@ ekg::ui::checkbox *ekg::checkbox(std::string_view text, uint16_t dock) {
     ui->set_text_align(ekg::dock::left | ekg::dock::center);
     ui->set_box_align(ekg::dock::left | ekg::dock::center);
     ui->set_tag(text);
+    ui->set_value(value);
 
     return ui;
 }
@@ -314,7 +331,6 @@ ekg::ui::popup *ekg::popup(std::string_view tag, const std::vector<std::string> 
     ui->set_tag(tag);
     ui->set_scaled_height(1);
     ui->set_text_align(ekg::dock::center | ekg::dock::left);
-    ui->set_tag(tag);
 
     return ui;
 }
@@ -331,6 +347,14 @@ ekg::ui::textbox *ekg::textbox(std::string_view tag, std::string_view text, uint
     ui->set_width(200);
     ui->set_text(text);
 
+    return ui;
+}
+
+ekg::ui::scroll *ekg::scroll(std::string_view tag) {
+    auto ui {new ekg::ui::scroll()};
+    ui->set_type(ekg::type::scroll);
+    ui->set_tag(tag);
+    ekg::core->gen_widget(ui);
     return ui;
 }
 

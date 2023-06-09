@@ -27,29 +27,29 @@ void ekg::draw::rect(float x, float y, float w, float h, const ekg::vec4 &color,
     ekg::gpu::allocator &allocator {ekg::core->get_gpu_allocator()};
     ekg::gpu::data &data {allocator.bind_current_data()};
 
-    data.shape_rect[0] = static_cast<float>(((x)));
-    data.shape_rect[1] = static_cast<float>(((y)));
-    data.shape_rect[2] = static_cast<float>(((w)));
-    data.shape_rect[3] = static_cast<float>(((h)));
+    data.shape_rect[0] = x;
+    data.shape_rect[1] = y;
+    data.shape_rect[2] = w;
+    data.shape_rect[3] = h;
 
-    allocator.vertex2f(0, 0);
-    allocator.vertex2f(0, 1);
-    allocator.vertex2f(1, 1);
-    allocator.vertex2f(1, 1);
-    allocator.vertex2f(1, 0);
-    allocator.vertex2f(0, 0);
+    allocator.vertex2f(0.0f, 0.0f);
+    allocator.vertex2f(0.0f, 1.0f);
+    allocator.vertex2f(1.0f, 1.0f);
+    allocator.vertex2f(1.0f, 1.0f);
+    allocator.vertex2f(1.0f, 0.0f);
+    allocator.vertex2f(0.0f, 0.0f);
 
-    allocator.coord2f(0, 0);
-    allocator.coord2f(0, 1);
-    allocator.coord2f(1, 1);
-    allocator.coord2f(1, 1);
-    allocator.coord2f(1, 0);
-    allocator.coord2f(0, 0);
+    allocator.coord2f(0.0f, 0.0f);
+    allocator.coord2f(0.0f, 0.0f);
+    allocator.coord2f(1.0f, 1.0f);
+    allocator.coord2f(1.0f, 1.0f);
+    allocator.coord2f(1.0f, 1.0f);
+    allocator.coord2f(0.0f, 0.0f);
 
-    data.material_color[0] = static_cast<uint8_t>(color.x);
-    data.material_color[1] = static_cast<uint8_t>(color.y);
-    data.material_color[2] = static_cast<uint8_t>(color.z);
-    data.material_color[3] = static_cast<uint8_t>(color.w);
+    data.material_color[0] = color.x;
+    data.material_color[1] = color.y;
+    data.material_color[2] = color.z;
+    data.material_color[3] = color.w;
     data.line_thickness = line_thickness;
     data.factor = 1;
 
@@ -68,10 +68,7 @@ void ekg::draw::bind_off_scissor() {
     ekg::core->get_gpu_allocator().bind_off_scissor();
 }
 
-void ekg::draw::bind_animation(int32_t id_tag) {
-    ekg::core->get_gpu_allocator().bind_animation(id_tag);
-}
-
-void ekg::draw::bind_off_animation() {
-    ekg::core->get_gpu_allocator().bind_off_animation();
+bool ekg::draw::is_visible(int32_t scissor_id, ekg::vec4 &interact) {
+    auto scissor {ekg::core->get_gpu_allocator().get_scissor_by_id(scissor_id)};
+    return scissor != nullptr && ekg::rect_collide_vec({scissor->rect[0], scissor->rect[1], scissor->rect[2], scissor->rect[3]}, interact);
 }

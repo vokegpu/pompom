@@ -63,7 +63,7 @@ extern int SDL_SendKeyboardKeyAndKeycode(Uint8 state, SDL_Scancode scancode, SDL
 /* Release all the autorelease keys */
 extern void SDL_ReleaseAutoReleaseKeys(void);
 
-/* Return true if any hardware key is pressed */
+/* Return true if any hardware key is action */
 extern SDL_bool SDL_HardwareKeyboardKeyPressed(void);
 
 /* Send keyboard text input */

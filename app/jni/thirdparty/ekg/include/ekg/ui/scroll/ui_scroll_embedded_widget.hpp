@@ -25,6 +25,7 @@ namespace ekg::ui {
         std::vector<int32_t> child_id_list {};
         ekg::rect *rect_mother {};
         ekg::rect rect_child {};
+        ekg::rect rect_dimension_sync {};
 
         ekg::vec4 scroll {};
         ekg::rect rect_vertical_scroll_bar {};
@@ -32,15 +33,22 @@ namespace ekg::ui {
 
         ekg::flag flag {};
         int32_t mother_id {};
+        int32_t widget_id {};
+
         bool is_vertical_enabled {};
         bool is_horizontal_enabled {};
+
         ekg::vec2 acceleration {};
         ekg::vec2 bar_drag {};
     public:
         explicit scroll_embedded_widget();
+
         void calculate_rect_bar_sizes();
         void clamp_scroll();
         bool is_dragging_bar();
+        bool check_activy_state(bool);
+        void reset_scroll();
+        void check_axis_states();
 
         void on_destroy();
         void on_reload();

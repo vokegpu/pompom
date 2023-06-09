@@ -269,7 +269,7 @@ private:
     void _HandleMouseButton(BMessage *msg) {
         SDL_Window *win;
         int32 winID;
-        int32 button, state;    /* left/middle/right, pressed/released */
+        int32 button, state;    /* left/middle/right, action/released */
         if(
             !_GetWinID(msg, &winID) ||
             msg->FindInt32("button-id", &button) != B_OK ||
@@ -297,7 +297,7 @@ private:
     }
 
     void _HandleKey(BMessage *msg) {
-        int32 scancode, state;  /* scancode, pressed/released */
+        int32 scancode, state;  /* scancode, action/released */
         if(
             msg->FindInt32("key-state", &state) != B_OK ||
             msg->FindInt32("key-scancode", &scancode) != B_OK
@@ -305,7 +305,7 @@ private:
             return;
         }
 
-        /* Make sure this isn't a repeated event (key pressed and held) */
+        /* Make sure this isn't a repeated event (key action and held) */
         if(state == SDL_PRESSED && HAIKU_GetKeyState(scancode) == SDL_PRESSED) {
             return;
         }

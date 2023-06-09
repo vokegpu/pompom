@@ -18,7 +18,7 @@
 #include "ekg/ui/frame/ui_frame_widget.hpp"
 
 void ekg::service::layout::set_preset_mask(const ekg::vec3 &offset, ekg::axis axis, float initial_respective_size) {
-    this->dock_axis_mask = axis;    
+    this->dock_axis_mask = axis;
     this->offset_mask = offset;
     this->respective_mask_all = initial_respective_size;
 }
@@ -32,27 +32,30 @@ void ekg::service::layout::insert_into_mask(const ekg::dockrect &dockrect) {
 }
 
 void ekg::service::layout::process_layout_mask() {
-    if (this->dockrect_list.empty()) {
-        return;
-    }
-
     /*
      * V is the the respective size (axis horizontal == width | axis vertical == height)
      */
-    bool axis {this->dock_axis_mask == ekg::axis::horizontal}, left_or_right {};
+    bool axis {this->dock_axis_mask == ekg::axis::horizontal};
+    if (this->dockrect_list.empty()) {
+        this->layout_mask.w = axis ? this->respective_mask_all : this->offset_mask.z;
+        this->layout_mask.h = axis ? this->offset_mask.z : this->respective_mask_all;
+        return;
+    }
+
+    float left_or_right {};
     float v {this->respective_mask_all};
     float centered_dimension {this->offset_mask.z / 2};
     float opposite {}, uniform {};
     float clamped_offset {};
 
-    /* offset z is the dimension respective (width if height else height) size */
-    this->layout_mask.w = axis ? this->offset_mask.x : this->offset_mask.z;
-    this->layout_mask.h = axis ? this->offset_mask.z : this->offset_mask.y;
-
     /* check for opposite dock and get the full size respective for the axis dock */
     if (v == 0) {
         v = this->get_respective_mask_size();
     }
+
+    /* offset z is the dimension respective (width if height else height) size */
+    this->layout_mask.w = axis ? this->offset_mask.x : this->offset_mask.z;
+    this->layout_mask.h = axis ? this->offset_mask.z : this->offset_mask.y;
 
     /* axis false is equals X else is equals Y */
     for (ekg::dockrect &dockrect : this->dockrect_list) {
@@ -223,7 +226,6 @@ float ekg::service::layout::get_dimensional_extent(ekg::ui::abstract_widget *wid
      * The min offset is added for extent, because we need count
      * the offset position when spliting the fill width, but the
      * last extent space is not necessary, so we need to subtract.
-     *
      */
     for (it = it; it < child_id_list.size(); it++) {
         ids = child_id_list.at(it);
@@ -236,7 +238,7 @@ float ekg::service::layout::get_dimensional_extent(ekg::ui::abstract_widget *wid
 
         if ((ekg::bitwise::contains(flags, flag_stop) && it != begin_and_count) || is_last_index) {
             extent -= this->min_offset;
-            n += (ekg::bitwise::contains(flags, flag_ok) && is_last_index);
+            n += (!ekg::bitwise::contains(flags, flag_stop) && ekg::bitwise::contains(flags, flag_ok) && is_last_index);
 
             this->extent_data[1] = static_cast<float>(it + is_last_index);
             this->extent_data[2] = extent;
@@ -267,27 +269,43 @@ void ekg::service::layout::process(ekg::ui::abstract_widget *pwidget) {
 
 }
 
-void ekg::service::layout::process_scaled(ekg::ui::abstract_widget* widget_parent) {
+void ekg::service::layout::process_scaled(ekg::ui::abstract_widget *widget_parent) {
     if (widget_parent == nullptr || widget_parent->data == nullptr) {
         return;
     }
 
     auto type {widget_parent->data->get_type()};
     auto is_group {type == ekg::type::frame};
-    auto &parent_rect = widget_parent->data->widget();
+    auto &parent_rect = widget_parent->get_abs_rect();
 
     if (!is_group || parent_rect.w == 0 || parent_rect.h == 0) {
         return;
     }
 
+    if (widget_parent->is_targeting_absolute_parent) {
+        widget_parent->is_targeting_absolute_parent = false;
+        this->process_scaled(ekg::find_absolute_parent_master(widget_parent));
+        return;
+    }
+
     float group_top_offset {this->min_offset};
+    ekg::rect group_rect {widget_parent->dimension};
+    
+    bool has_scroll_embedded {};
+    bool is_vertical_enabled {};
+
     switch (type) {
         case ekg::type::frame: {
-            auto widget_group {(ekg::ui::frame_widget*) widget_parent};
-            auto ui_group {(ekg::ui::frame*) widget_parent->data};
+            auto frame{(ekg::ui::frame_widget *) widget_parent};
+            float scrollbar_pixel_thickness {static_cast<float>(ekg::theme().scrollbar_pixel_thickness)};
+            has_scroll_embedded = frame->p_scroll_embedded != nullptr;
 
-            if (ekg::bitwise::contains(ui_group->get_drag_dock(), ekg::dock::top)) {
-                group_top_offset = widget_group->docker_activy_drag.top.h;
+            if (has_scroll_embedded) {
+                frame->p_scroll_embedded->check_axis_states();
+                is_vertical_enabled = frame->p_scroll_embedded->is_vertical_enabled;
+
+                group_rect.w -= scrollbar_pixel_thickness * static_cast<float>(frame->p_scroll_embedded->is_vertical_enabled);
+                group_rect.h -= scrollbar_pixel_thickness * static_cast<float>(frame->p_scroll_embedded->is_horizontal_enabled);
             }
 
             break;
@@ -298,6 +316,14 @@ void ekg::service::layout::process_scaled(ekg::ui::abstract_widget* widget_paren
         }
     }
 
+    /*
+     * The dimension of mother/parent group is not scaled by min offsets,
+     * when transforming unuscaled sizes, it can return a wrong position,
+     * in simple words, non-scaled size return non aligned positions.
+     */
+    group_rect.w -= this->min_offset * 2.0f;
+    group_rect.h -= this->min_offset * 2.0f;
+
     this->scaled_width_divided = parent_rect.w / 3;
     this->scaled_width_divided = parent_rect.h / 2;
     this->enum_docks_flag = 0;
@@ -307,15 +333,6 @@ void ekg::service::layout::process_scaled(ekg::ui::abstract_widget* widget_paren
     int64_t it {};
     float dimensional_extent {};
     int64_t count {};
-
-    /*
-     * The dimension of mother/parent group is not scaled by min offsets,
-     * when transforming unuscaled sizes, it can return a wrong position,
-     * in simple words, non-scaled size return non aligned positions.
-     */
-    ekg::rect group_rect {widget_parent->dimension};
-    group_rect.w -= this->min_offset * 2.0f;
-    group_rect.h -= this->min_offset * 2.0f;
 
     ekg::rect widget_rect {};
     ekg::rect bottom_rect {};
@@ -334,8 +351,10 @@ void ekg::service::layout::process_scaled(ekg::ui::abstract_widget* widget_paren
     this->extent_data[2] = 0.0f;
 
     bool should_reload_widget {};
+    bool skip_widget {};
+    float extent_data_backup[4] {};
 
-    // @TODO Fix fill -> (fill | next) issue with widgets.
+    // @TODO Prevent useless scrolling reload;
 
     /*
      * Rect == absolute position of current widget
@@ -346,11 +365,28 @@ void ekg::service::layout::process_scaled(ekg::ui::abstract_widget* widget_paren
             continue;
         }
 
-        auto &rect {widgets->data->widget()};
         auto &layout {widgets->dimension};
-
         flags = widgets->data->get_place_dock();
-        if (ekg::bitwise::contains(flags, ekg::dock::next) && ekg::bitwise::contains(flags, ekg::dock::fill)) {
+        skip_widget = false;
+
+        switch (widgets->data->get_type()) {
+            case ekg::type::scroll: {
+                skip_widget = true;
+                break;
+            }
+
+            default: {
+                break;
+            }
+        }
+
+        if (skip_widget) {
+            widgets->on_reload();
+            it++;
+            continue;
+        }
+
+        if (ekg::bitwise::contains(flags, ekg::dock::fill) && ekg::bitwise::contains(flags, ekg::dock::next)) {
             top_rect.h += prev_widget_layout.h + this->min_offset;
             top_rect.w = 0.0f;
 
@@ -394,13 +430,51 @@ void ekg::service::layout::process_scaled(ekg::ui::abstract_widget* widget_paren
             dimensional_extent = this->get_dimensional_extent(widget_parent, ekg::dock::fill, ekg::dock::next, count, ekg::axis::horizontal);
         }
 
+        if (ekg::bitwise::contains(flags, ekg::dock::resize)) {
+            should_reload_widget = true;
+        }
+
         if (should_reload_widget) {
             widgets->on_reload();
         }
 
+        extent_data_backup[0] = this->extent_data[0];
+        extent_data_backup[1] = this->extent_data[1];
+        extent_data_backup[2] = this->extent_data[2];
+        extent_data_backup[3] = this->extent_data[3];
+
+        if (widgets->data->has_children()) {
+            this->process_scaled(widgets);
+        }
+
+        this->extent_data[0] = extent_data_backup[0];
+        this->extent_data[1] = extent_data_backup[1];
+        this->extent_data[2] = extent_data_backup[2];
+        this->extent_data[3] = extent_data_backup[3];
+
         prev_widget_layout = layout;
         prev_flags = flags;
         it++;
+    }
+
+    if (has_scroll_embedded && !is_vertical_enabled) {
+        switch (type) {
+            case ekg::type::frame: {
+                auto frame{(ekg::ui::frame_widget *) widget_parent};
+                has_scroll_embedded = frame->p_scroll_embedded != nullptr;
+
+                if (has_scroll_embedded && !is_vertical_enabled &&
+                    frame->p_scroll_embedded->is_vertical_enabled) {
+                    this->process_scaled(widget_parent);
+                }
+
+                break;
+            }
+
+            default: {
+                break;
+            }
+        }
     }
 }
 
@@ -408,9 +482,14 @@ void ekg::service::layout::init() {
     this->min_factor_height = 1;
     this->min_height = ekg::core->get_f_renderer_normal().get_text_height();
     this->min_fill_width = this->min_height;
-    this->min_offset = this->min_height / 3;
-    this->min_height += this->min_offset;
-    this->min_offset /= 2;
+
+    /*
+     * Same as font.cpp:
+     * A common issue with rendering overlay elements is flot32 imprecision, for this reason
+     * the cast float32 to int32 is necessary.
+     */
+    this->min_offset = (this->min_height / 6.0f) / 2.0f;
+    this->min_offset = static_cast<int32_t>(this->min_offset);
 }
 
 void ekg::service::layout::quit() {

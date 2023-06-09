@@ -1158,7 +1158,7 @@ keyboard_handle_leave(void *data, struct wl_keyboard *keyboard,
     /* Stop key repeat before clearing keyboard focus */
     keyboard_repeat_clear(&input->keyboard_repeat);
 
-    /* This will release any keys still pressed */
+    /* This will release any keys still action */
     SDL_SetKeyboardFocus(NULL);
 
 #ifdef SDL_USE_IME

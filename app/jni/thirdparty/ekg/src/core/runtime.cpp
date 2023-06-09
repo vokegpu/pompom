@@ -11,7 +11,6 @@
  *
  * @VokeGpu 2023 all rights reserved.
  */
-
 #include "ekg/core/runtime.hpp"
 #include "ekg/util/util_event.hpp"
 #include "ekg/ui/frame/ui_frame.hpp"
@@ -22,6 +21,8 @@
 #include "ekg/ui/slider/ui_slider_widget.hpp"
 #include "ekg/ui/popup/ui_popup_widget.hpp"
 #include "ekg/ui/textbox/ui_textbox_widget.hpp"
+#include "ekg/ui/scroll/ui_scroll_widget.hpp"
+#include "ekg/ui/scroll/ui_scroll.hpp"
 #include "ekg/draw/draw.hpp"
 #include "ekg/ekg.hpp"
 
@@ -55,6 +56,10 @@ void ekg::runtime::set_top_level(int32_t id) {
 
 int32_t ekg::runtime::get_top_level() {
     return this->top_level_id;
+}
+
+void ekg::runtime::update_size_changed() {
+    ekg::dispatch(ekg::env::redraw);
 }
 
 void ekg::runtime::init() {
@@ -123,7 +128,7 @@ void ekg::runtime::process_event(SDL_Event &sdl_event) {
             found_absolute_widget = widgets->flag.absolute;
         }
 
-        widgets->flag.hovered = false;
+        widgets->on_post_event(sdl_event);
         if (!hovered && !found_absolute_widget) {
             widgets->on_event(sdl_event);
         }
@@ -135,7 +140,7 @@ void ekg::runtime::process_event(SDL_Event &sdl_event) {
     if (focused_widget != nullptr) {
         focused_widget->on_pre_event(sdl_event);
         focused_widget->on_event(sdl_event);
-        focused_widget->flag.hovered = false;
+        focused_widget->on_post_event(sdl_event);
         ekg::hovered::type = focused_widget->data->get_type();
     } 
 
@@ -160,6 +165,7 @@ void ekg::runtime::process_event(SDL_Event &sdl_event) {
 
 void ekg::runtime::process_update() {
     this->input_service.on_update();
+    bool {ekg::reach(this->ui_timing, 1000) && ekg::reset(this->ui_timing)};
 
     if (this->enable_high_priority_frequency) {
         auto &update = this->widget_list_map["update"];
@@ -302,9 +308,10 @@ void ekg::runtime::prepare_tasks() {
 
                 switch (widgets->data->get_type()) {
                     case ekg::type::frame: {
-                        auto ui {(ekg::ui::frame *) widgets->data};
+                        auto ui {(ekg::ui::frame*) widgets->data};
                         auto pos {ui->get_pos_initial()};
                         auto size {ui->get_size_initial()};
+                        auto &rect_ui {ui->ui()};
 
                         if (ui->widget() != ekg::vec4 {pos, size}) {
                             widgets->dimension.w = size.x;
@@ -330,12 +337,11 @@ void ekg::runtime::prepare_tasks() {
 
             if (ekg::bitwise::contains(sync_flags, (uint16_t) ekg::uisync::dimension)) {
                 ekg::bitwise::remove(sync_flags, (uint16_t) ekg::uisync::dimension);
-                auto &rect {widgets->data->ui()};
 
+                auto &rect {widgets->data->ui()};
                 switch (widgets->data->get_type()) {
                     case ekg::type::popup: {
                         widgets->dimension.w = rect.w;
-
                         widgets->parent->x = rect.x;
                         widgets->parent->y = rect.y;
                         break;
@@ -345,13 +351,14 @@ void ekg::runtime::prepare_tasks() {
                         widgets->dimension.w = rect.w;
                         widgets->dimension.h = rect.h;
 
-                        if (widgets->data->get_parent_id() != 0) {
+                        if (widgets->data->has_parent()) {
                             widgets->dimension.x = rect.x - widgets->parent->x;
                             widgets->dimension.y = rect.y - widgets->parent->y;
                         } else {
                             widgets->parent->x = rect.x;
                             widgets->parent->y = rect.y;
                         }
+
                         break;
                     }
                 }
@@ -367,8 +374,7 @@ void ekg::runtime::prepare_tasks() {
 
     this->handler_service.dispatch(new ekg::cpu::event {"synclayout", this, [](void *p_data) {
         auto *runtime {static_cast<ekg::runtime*>(p_data)};
-        auto &reload = runtime->widget_list_map["synclayout"];
-        // todo fix the issue with sync layout offset.
+        auto &reload {runtime->widget_list_map["synclayout"]};
 
         for (ekg::ui::abstract_widget *&widgets : reload) {
             if (widgets == nullptr || runtime->processed_widget_map[widgets->data->get_id()]) {
@@ -400,6 +406,11 @@ void ekg::runtime::prepare_tasks() {
             ekg::swap::front.clear();
             ekg::push_back_stack(parent_master, ekg::swap::front);
 
+            /* Any frame/container supports scrolling, but we need to clamp it before calculating the scissor. */
+            if (parent_master != nullptr) {
+                parent_master->on_update();
+            }
+
             /*
              * Scissor is a great feature from OpenGL, but it
              * does not stack, means that GL context does not
@@ -413,7 +424,7 @@ void ekg::runtime::prepare_tasks() {
              * Two things important:
              * 1 - This scissors scheme use scissor IDs from widgets.
              * 2 - Iteration collect ALL parent families and sub parent of target.
-            */
+             */
 
             for (ekg::ui::abstract_widget *&scissor_widget : ekg::swap::front.ordered_list) {
                 gpu_scissor = runtime->allocator.get_scissor_by_id(scissor_widget->data->get_id());
@@ -430,7 +441,11 @@ void ekg::runtime::prepare_tasks() {
                     continue;
                 }
 
-                parent_master = runtime->widget_map[scissor_widget->data->get_parent_id()];
+                if (parent_master == nullptr || (parent_master != nullptr && parent_master->data->get_id() != scissor_widget->data->get_parent_id())) {
+                    parent_master = runtime->widget_map[scissor_widget->data->get_parent_id()];
+                    parent_master->on_update();
+                }
+
                 gpu_parent_master_scissor = runtime->get_gpu_allocator().get_scissor_by_id(parent_master->data->get_id());
                 if (gpu_parent_master_scissor == nullptr) {
                     continue;
@@ -448,26 +463,28 @@ void ekg::runtime::prepare_tasks() {
                 scissor[2] = widget_rect.w;
                 scissor[3] = widget_rect.h;
 
-                if (scissor[0] <= scissor_parent_master[0]) {
+                if (scissor[0] < scissor_parent_master[0]) {
+                    scissor[2] -= scissor_parent_master[0] - scissor[0];
                     scissor[0] = scissor_parent_master[0];
                 }
 
-                if (scissor[1] <= scissor_parent_master[1]) {
+                if (scissor[1] < scissor_parent_master[1]) {
+                    scissor[3] -= scissor_parent_master[1] - scissor[1];
                     scissor[1] = scissor_parent_master[1];
                 }
 
-                if (scissor[0] + scissor[2] >= scissor_parent_master[0] + scissor_parent_master[2]) {
+                if (scissor[0] + scissor[2] > scissor_parent_master[0] + scissor_parent_master[2]) {
                     scissor[2] -= (scissor[0] + scissor[2]) - (scissor_parent_master[0] + scissor_parent_master[2]);
                 }
 
-                if (scissor[1] + scissor[3] >= scissor_parent_master[1] + scissor_parent_master[3]) {
+                if (scissor[1] + scissor[3] > scissor_parent_master[1] + scissor_parent_master[3]) {
                     scissor[3] -= (scissor[1] + scissor[3]) - (scissor_parent_master[1] + scissor_parent_master[3]);
                 }
 
-                gpu_scissor->rect[0] = scissor[0];
-                gpu_scissor->rect[1] = scissor[1];
-                gpu_scissor->rect[2] = scissor[2];
-                gpu_scissor->rect[3] = scissor[3];
+                gpu_scissor->rect[0] = ekg::min(scissor[0], 0.0f);
+                gpu_scissor->rect[1] = ekg::min(scissor[1], 0.0f);
+                gpu_scissor->rect[2] = ekg::min(scissor[2], 0.0f);
+                gpu_scissor->rect[3] = ekg::min(scissor[3], 0.0f);
             }
 
             runtime->processed_widget_map[widgets->data->get_id()] = true;
@@ -480,7 +497,7 @@ void ekg::runtime::prepare_tasks() {
 
     this->handler_service.dispatch(new ekg::cpu::event {"redraw", this, [](void *p_data) {
         auto *runtime {static_cast<ekg::runtime*>(p_data)};
-        auto &all =  runtime->widget_list_map["all"];
+        auto &all {runtime->widget_list_map["all"]};
 
         runtime->allocator.invoke();
         if (ekg::debug) {
@@ -544,7 +561,7 @@ ekg::ui::abstract_widget *ekg::runtime::get_fast_widget_by_id(int32_t id) {
     return id ? this->widget_map[id] : nullptr;
 }
 
-void ekg::runtime::do_task_reload(ekg::ui::abstract_widget* widget) {
+void ekg::runtime::do_task_reload(ekg::ui::abstract_widget *widget) {
     if (widget != nullptr) {
         this->widget_list_map["reload"].push_back(widget);
         ekg::dispatch(ekg::env::reload);
@@ -624,6 +641,7 @@ void ekg::runtime::prepare_ui_env() {
     this->input_service.bind("scrollbar-drag", "mouse-1");
     this->input_service.bind("scrollbar-drag", "finger-click");
     this->input_service.bind("scrollbar-scroll", "mouse-wheel");
+    this->input_service.bind("scrollbar-scroll", "finger-swipe");
 }
 
 void ekg::runtime::gen_widget(ekg::ui::abstract *ui) {
@@ -648,7 +666,7 @@ void ekg::runtime::gen_widget(ekg::ui::abstract *ui) {
         widget->data = ui;
         update_scissor = true;
         created_widget = widget;
-        this->current_bind_group = created_widget;
+        this->current_bind_group = ui;
         ui->reset();
         break;
     }
@@ -694,6 +712,13 @@ void ekg::runtime::gen_widget(ekg::ui::abstract *ui) {
         append_group = true;
         break;
     }
+    case ekg::type::scroll: {
+        auto *widget {new ekg::ui::scroll_widget()};
+        widget->data = ui;
+        created_widget = widget;
+        append_group = true;
+        break;
+    }
     default:
         break;
     }
@@ -703,7 +728,7 @@ void ekg::runtime::gen_widget(ekg::ui::abstract *ui) {
     this->do_task_reload(created_widget);
 
     if (append_group && this->current_bind_group != nullptr) {
-        this->current_bind_group->data->add_child(ui->get_id());
+        this->current_bind_group->add_child(ui->get_id());
     }
 
     if (update_scissor) {

@@ -25,23 +25,27 @@ namespace ekg::ui {
     public:
         std::vector<std::string> text_chunk_list {};
         std::string widget_side_text {};
+        
         ekg::rect rect_text {};
+        ekg::rect rect_cursor {};
         ekg::ui::scroll_embedded_widget embedded_scroll {};
 
-        int64_t visible_chunk[2] {};
+        int64_t visible_chunk[4] {};
         int64_t cursor[6] {};
+        float cursor_char_wsize[3] {};
 
-        float scroll[4] {};
         float text_offset {};
         float text_height {};
-
+        
         bool redraw_cursor {};
+        bool is_ui_enabled {};
     public:
         void check_cursor_text_bounding();
         std::string &get_cursor_emplace_text();
         void process_text(std::string_view text, ekg::ui::textbox_widget::action action, int64_t direction);
         void move_cursor(int64_t, int64_t, bool = false);
         void unset_focus();
+        void check_largest_text_width();
 
         void on_destroy() override;
         void on_reload() override;

@@ -75,12 +75,18 @@ void ekg::ui::checkbox_widget::on_event(SDL_Event &sdl_event) {
         ekg::set(this->flag.focused, this->flag.hovered && ekg::rect_collide_vec(this->rect_box + (this->dimension + *this->parent), ekg::interact()));
     }
 
-    if (pressed && !this->flag.activy && this->flag.hovered && ekg::input::pressed("checkbox-activy")) {
+    if (pressed && !this->flag.activy && this->flag.hovered && ekg::input::action("checkbox-activy")) {
         ekg::set(this->flag.activy, true);
     } else if (released && this->flag.activy) {
         if (this->flag.hovered) {
             auto ui {(ekg::ui::checkbox*) this->data};
             ui->set_value(!ui->get_value());
+
+            auto callback {ui->get_callback()};
+            if (callback != nullptr) {
+                ekg::dispatch(callback);
+            }
+
             ekg::dispatch_ui_event(ui->get_tag().empty() ? "Unknown Checkbox UI" : ui->get_tag(), ui->get_value() ? "checked" : "unchecked", (uint16_t) ui->get_type());
         }
 
@@ -111,39 +117,28 @@ void ekg::ui::checkbox_widget::on_draw_refresh() {
     ekg::draw::rect(rect, theme.checkbox_outline, ekg::drawmode::outline);
 
     if (this->flag.highlight) {
-        ekg::draw::bind_animation(this->data->get_id());
         ekg::draw::rect(rect, theme.checkbox_highlight);
-        ekg::draw::bind_animation(false);
     }
 
     if (this->flag.focused && !ui->get_value()) {
-        ekg::draw::bind_animation(this->data->get_id());
         ekg::draw::rect(box, theme.checkbox_highlight);
-        ekg::draw::bind_animation(false);
     }
 
     ekg::draw::rect(box, theme.checkbox_highlight);
 
     if (this->flag.activy) {
-        ekg::draw::bind_animation(this->data->get_id());
         ekg::draw::rect(this->flag.focused ? box : rect, theme.checkbox_activy);
-        ekg::draw::bind_animation(false);
     }
 
     if (ui->get_value()) {
-        ekg::draw::bind_animation(this->data->get_id());
         ekg::draw::rect(box, theme.checkbox_activy);
-        ekg::draw::bind_animation(false);
     }
 
     if (ui->get_value() && this->flag.highlight) {
-        ekg::draw::bind_animation(this->data->get_id());
         ekg::draw::rect(box, {theme.checkbox_activy, theme.checkbox_outline.w}, ekg::drawmode::outline);
-        ekg::draw::bind_animation(false);
     }
 
     f_renderer.blit(ui->get_text(), rect.x + this->rect_text.x, rect.y + this->rect_text.y, theme.checkbox_string);
 
-    ekg::draw::bind_off_animation();
     ekg::draw::bind_off_scissor();
 }

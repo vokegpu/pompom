@@ -103,7 +103,7 @@ typedef struct SDL_MessageBoxDataX11
 
     int *pbuttonid;                     /* Pointer to user return buttonid value. */
 
-    int button_press_index;             /* Index into buttondata/buttonpos for button which is pressed (or -1). */
+    int button_press_index;             /* Index into buttondata/buttonpos for button which is action (or -1). */
     int mouse_over_index;               /* Index into buttondata/buttonpos for button mouse is over (or -1). */
 
     int numbuttons;                     /* Count of buttons. */

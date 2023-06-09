@@ -540,7 +540,7 @@ int OS2_ShowMessageBox(const SDL_MessageBoxData *messageboxdata, int *buttonid)
             }
         }
     } else {
-        /* Button pressed. */
+        /* Button action. */
         ulRC -= IDD_PB_FIRST;
         if (ulRC < cSDLBtnData) {
             *buttonid = pSDLBtnData[ulRC].buttonid;

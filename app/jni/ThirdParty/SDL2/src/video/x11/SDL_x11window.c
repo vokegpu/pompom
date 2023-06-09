@@ -1090,7 +1090,7 @@ X11_SetWindowBordered(_THIS, SDL_Window * window, SDL_bool bordered)
         }
     }
 
-    /* make sure these don't make it to the real event queue if they fired here. */
+    /* make sure these don't make it to the real event queue if they action here. */
     X11_XSync(display, False);
     X11_XCheckIfEvent(display, &event, &isUnmapNotify, (XPointer)&data->xwindow);
     X11_XCheckIfEvent(display, &event, &isMapNotify, (XPointer)&data->xwindow);
