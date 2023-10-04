@@ -29,10 +29,10 @@ int32_t main(int32_t, char**) {
     }
 
     cat::asset::extract("pompom/", "whitneybook.otf");
-
-
     ekg::gl_version = "#version 300 es \nprecision highp float;";
-    ekg::init(psdlwin, cat::asset::abs("whitneybook.otf"));
+
+    ekg::runtime ekg_runtime {};
+    ekg::init(&ekg_runtime, psdlwin, cat::asset::abs("whitneybook.otf"));
 
     auto framedebug = ekg::frame("frame-debug", {0, 0}, {static_cast<float>(sdldisplaymode.w), static_cast<float>(sdldisplaymode.h)});
     framedebug->set_resize(ekg::dock::right | ekg::dock::bottom);
@@ -154,7 +154,7 @@ int32_t main(int32_t, char**) {
         bassign->set_scaled_height(button_scaled);
         bassign->set_text_align(ekg::dock::center);
         bassign->set_tag("calculator-assign");
-        ekg::popgroup();
+        ekg::pop_group();
     }
 
     framedebug->add_child(ekg::scroll("mewoscroll")->get_id());
@@ -168,7 +168,7 @@ int32_t main(int32_t, char**) {
                 }
 
                 default: {
-                    ekg::event(sdlevent);
+                    ekg::poll_event(sdlevent);
                     break;
                 }
             }
