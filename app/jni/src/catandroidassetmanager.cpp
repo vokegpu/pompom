@@ -1,6 +1,6 @@
 #include "catandroidassetmanager.hpp"
 #include "SDL.h"
-#include "ekg/util/env.hpp"
+#include "ekg/util/io.hpp"
 
 JNIEnv *cat::pjnienv {};
 AAssetManager *cat::asset::pmanager {};

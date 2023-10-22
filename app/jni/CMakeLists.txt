@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.0)
 project(pompom)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -9,12 +9,15 @@ find_library(SDL2 SDL2)
 add_subdirectory(thirdparty/freetype)
 find_library(freetype freetype)
 
-add_subdirectory(thirdparty/ekg)
-find_library(ekg ekg)
-
 include_directories(src)
 include_directories(thirdparty/SDL2/include)
 include_directories(thirdparty/freetype/include)
+
+# EKG add_subdirectory and find_library must be after SDL and Freetype!
+# For prevent include fails in EKG building.
+add_subdirectory(thirdparty/ekg)
+find_library(ekg ekg)
+
 include_directories(thirdparty/ekg/include)
 
 file(GLOB_RECURSE POMPOM_SOURCE_FILES "src/*.cpp")

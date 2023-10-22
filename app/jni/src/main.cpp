@@ -29,7 +29,7 @@ int32_t main(int32_t, char**) {
     }
 
     cat::asset::extract("pompom/", "whitneybook.otf");
-    ekg::gl_version = "#version 300 es \nprecision highp float;";
+    ekg::glsl_version = "#version 300 es \nprecision highp float;";
 
     ekg::runtime ekg_runtime {};
     ekg::init(&ekg_runtime, psdlwin, cat::asset::abs("whitneybook.otf"));
@@ -50,8 +50,6 @@ int32_t main(int32_t, char**) {
         ekg::theme().gen_default_dark_theme();
         ekg::checkbox("Light Theme", false, ekg::dock::fill | ekg::dock::next)->set_callback(new ekg::cpu::event {"theme-switcher", frame2, [](void *pdata) {
             ekg::ui::frame *frame {static_cast<ekg::ui::frame*>(pdata)};
-            // frame->set_pos(20, 20);
-            // @TODO fix random issue with set positon
 
             auto &theme {ekg::theme()};
             std::string current_theme_name {theme.get_current_theme_name()};
