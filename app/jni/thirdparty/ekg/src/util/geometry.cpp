@@ -1,23 +1,33 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
+ * MIT License
+ * 
+ * Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
-#include "ekg/util/geometry.hpp"
 #include "ekg/ekg.hpp"
 
-float ekg::display::dt {};
 int32_t ekg::display::width {};
 int32_t ekg::display::height {};
+
+float ekg::display::dt {};
 double ekg::pi {3.141592653589793238462643383279502884};
 
 bool ekg::rect_collide_rect(const ekg::rect &rect_a, const ekg::rect &rect_b) {
@@ -53,12 +63,12 @@ void ekg::orthographic2d(float *matrix, float left, float right, float bottom, f
     matrix[15] = 1.0f;
 }
 
-bool ekg::rect_collide_vec(const ekg::rect &rect, const ekg::vec4 &vec) {
-    return vec.x > rect.x && vec.x < rect.x + rect.w && vec.y > rect.y && vec.y < rect.y + rect.h;
+bool ekg::rect_collide_vec_precisely(const ekg::rect &rect, const ekg::vec4 &vec) {
+    return vec.x >= rect.x && vec.x <= rect.x + rect.w && vec.y >= rect.y && vec.y <= rect.y + rect.h;
 }
 
-ekg::vec4 &ekg::interact() {
-    return ekg::core->get_service_input().interact;
+bool ekg::rect_collide_vec(const ekg::rect &rect, const ekg::vec4 &vec) {
+    return vec.x > rect.x && vec.x < rect.x + rect.w && vec.y > rect.y && vec.y < rect.y + rect.h;
 }
 
 void ekg::set_dock_scaled(const ekg::rect &rect, const ekg::vec2 &offset, ekg::docker &docker) {
@@ -110,8 +120,8 @@ int32_t ekg::find_collide_dock(ekg::docker &docker, uint16_t flags, const ekg::v
 }
 
 void ekg::set_rect_clamped(ekg::rect &rect, float min_size) {
-    rect.x = ekg::min(rect.x, min_size);
-    rect.y = ekg::min(rect.y, min_size);
+    rect.x = ekg::min(rect.x, 0.0f);
+    rect.y = ekg::min(rect.y, 0.0f);
     rect.w = ekg::min(rect.w, min_size);
     rect.h = ekg::min(rect.h, min_size);
 }
@@ -158,11 +168,11 @@ float ekg::find_min_offset(float text_width, float offset) {
      * Initial offset value sometime is font height divided by 2.
      */
     float full_rect {text_width + offset};
-    return ((full_rect / 2) - (text_width / 2));
+    return static_cast<float>(static_cast<int32_t>((full_rect * 0.5f) - (text_width * 0.5f)));
 }
 
 bool ekg::operator==(const ekg::rect &l, const ekg::rect &r) {
-    return EQUALS_FLOAT(l.x, r.x) && EQUALS_FLOAT(l.y, r.y) && EQUALS_FLOAT(l.w, r.w) && EQUALS_FLOAT(l.h, r.h);
+    return ekg_equals_float(l.x, r.x) && ekg_equals_float(l.y, r.y) && ekg_equals_float(l.w, r.w) && ekg_equals_float(l.h, r.h);
 }
 
 bool ekg::operator!=(const ekg::rect &l, const ekg::rect &r) {
@@ -170,7 +180,7 @@ bool ekg::operator!=(const ekg::rect &l, const ekg::rect &r) {
 }
 
 bool ekg::operator==(const ekg::rect &l, const ekg::vec4 &r) {
-    return EQUALS_FLOAT(l.x, r.x) && EQUALS_FLOAT(l.y, r.y) && EQUALS_FLOAT(l.w, r.z) && EQUALS_FLOAT(l.h, r.w);
+    return ekg_equals_float(l.x, r.x) && ekg_equals_float(l.y, r.y) && ekg_equals_float(l.w, r.z) && ekg_equals_float(l.h, r.w);
 }
 
 bool ekg::operator!=(const ekg::rect &l, const ekg::vec4 &r) {
@@ -220,6 +230,10 @@ ekg::vec4 ekg::operator/(const ekg::vec4 &l, float r) {
 float ekg::smooth(float duration, uint64_t ticks) {
     duration = static_cast<float>(ticks) / duration;
     return ekg::clamp(6 * powf(duration, 5) - (15 * powf(duration, 4)) + (10 * powf(duration, 3)), 0.0f, 1.0f);
+}
+
+float ekg::lerp(float a, float b, float dt) {
+    return a + (b - a) * dt;
 }
 
 ekg::vec4 ekg::color(int32_t r, int32_t g, int32_t b, int32_t a) {

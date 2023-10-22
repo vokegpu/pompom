@@ -1,57 +1,80 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
+ * MIT License
+ * 
+ * Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef EKG_GPU_ALLOCATOR_H
 #define EKG_GPU_ALLOCATOR_H
 
+#include <array>
+#include <vector>
+
 #include "ekg/gpu/data.hpp"
 #include "ekg/gpu/gl.hpp"
-#include <array>
-#include <map>
-#include <vector>
+#include "ekg/util/geometry.hpp"
 
 namespace ekg::gpu {
     class allocator {
     protected:
-        std::vector<ekg::gpu::data> data_list {};
-        std::unordered_map<int32_t, ekg::gpu::scissor> scissor_map {};
-
-        std::vector<float> cached_vertices {};
-        std::vector<float> cached_uvs {};
-        std::vector<uint32_t> cached_textures {};
-
-        uint32_t data_instance_index {}, previous_data_list_size {};
-        int32_t simple_shape_index {-1}, previous_factor {};
-
-        int32_t begin_stride_count {},
-                end_stride_count {};
-        int32_t uniform_active_texture {}, uniform_enable_scissor {},
-                uniform_color {}, uniform_rect {},
-                uniform_line_thickness {}, uniform_scissor {};
-
-        int32_t scissor_instance_id {-1}, animation_instance_id {};
-        float current_color_pass[4] {};
-
-        uint32_t vbo_vertices {}, vbo_uvs {}, vbo_array {};
-
-        bool factor_changed {}, simple_shape {};
         static float viewport[4];
-        bool check_convex_shape();
     public:
         static ekg::gpu::program program;
         static float mat4x4orthographic[16];
+        static bool is_out_of_scissor;
+    protected:
+        std::vector<ekg::gpu::data> data_list {};
+        std::unordered_map<int32_t, ekg::gpu::scissor> scissor_map {};
 
+        std::vector<float> cached_geometry_resources {};
+        std::vector<uint32_t> cached_textures {};
+
+        uint64_t data_instance_index {};
+        uint64_t previous_cached_geometry_resources_size {};
+
+        int32_t simple_shape_index {-1};
+        int32_t previous_factor {};
+        int32_t scissor_instance_id {-1};
+
+        uint64_t uvs_size {};
+        uint64_t vertexes_size {};
+
+        int32_t begin_stride_count {};
+        int32_t end_stride_count {};
+
+        int32_t uniform_active_texture {};
+        int32_t uniform_active_tex_slot {};
+        int32_t uniform_color {};
+        int32_t uniform_rect {};
+        int32_t uniform_line_thickness {};
+        int32_t uniform_scissor {};
+
+        uint32_t geometry_buffer {};
+        uint32_t vbo_array {};
+        uint32_t ebo_simple_shape {};
+
+        bool factor_changed {};
+        bool simple_shape {};
+        bool out_of_scissor_rect {};
+    public:
         /*
          * Init gpu allocator.
          */
@@ -75,7 +98,7 @@ namespace ekg::gpu {
         /*
          * Find registered gpu data in allocator's batch.
          */
-        ekg::gpu::data *get_data_by_id(int32_t id);
+        ekg::gpu::data *get_data_by_id(int32_t);
 
         /*
          * Get current gpu data.
@@ -85,12 +108,12 @@ namespace ekg::gpu {
         /*
          * Find registered scissor in allocator's batch.
          */
-        ekg::gpu::scissor *get_scissor_by_id(int32_t id);
+        ekg::gpu::scissor *get_scissor_by_id(int32_t);
 
         /*
          * Remove scissor data from memory.
          */
-        void erase_scissor_by_id(int32_t id);
+        void erase_scissor_by_id(int32_t);
 
         /*
          * Get current scissor active.
@@ -100,17 +123,13 @@ namespace ekg::gpu {
         /*
          * Bind texture for send in data.
          */
-        void bind_texture(uint32_t&);
+        void bind_texture(uint32_t);
 
         /*
-         * Alloc vertices positions for gpu data.
+         * Insert geometry positions here:
+         * vertex x, y and texture coords u, and v.
          */
-        void vertex2f(float, float);
-
-        /*
-         * Alloc texture UV coordinates for gpu data.
-         */
-        void coord2f(float, float);
+        void push_back_geometry(float, float, float, float);
 
         /* 
          * Update animations.
@@ -140,7 +159,7 @@ namespace ekg::gpu {
         /*
          * Sync active scissor position.
          */
-        void sync_scissor_pos(float, float);
+        void sync_scissor(ekg::rect&, int32_t);
 
         /*
          * Bind scissor using one ID for send in batch.

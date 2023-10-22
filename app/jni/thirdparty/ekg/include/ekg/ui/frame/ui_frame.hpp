@@ -1,15 +1,25 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
+ * MIT License
+ * 
+ * Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef EKG_UI_FRAME_H
@@ -29,39 +39,39 @@ namespace ekg::ui {
         std::string tag {};
         ekg::vec2 scale_factor {};
     public:
-        void set_place(uint16_t);
+        ekg::ui::frame *set_place(uint16_t dock);
 
-        void set_scale_factor(float, float);
+        ekg::ui::frame *set_scale_factor(float x, float y);
         ekg::vec2 get_scale_factor();
 
-        void set_drag(uint16_t);
+        ekg::ui::frame *set_drag(uint16_t dock);
         uint16_t get_drag_dock();
 
-        void set_resize(uint16_t);
+        ekg::ui::frame *set_resize(uint16_t dock);
         uint16_t get_resize_dock();
 
-        void set_pos_initial(float, float);
+        ekg::ui::frame *set_pos_initial(float x, float y);
         ekg::vec2 get_pos_initial();
 
-        void set_size_initial(float, float);
+        ekg::ui::frame *set_size_initial(float x, float y);
         ekg::vec2 get_size_initial();
 
-        void set_initial_width(float);
+        ekg::ui::frame *set_initial_width(float w);
         float get_initial_width();
 
-        void set_initial_height(float);
+        ekg::ui::frame *set_initial_height(float h);
         float get_initial_height();
 
-        void set_size(float, float);
+        ekg::ui::frame *set_size(float w, float h);
         ekg::vec2 get_size();
 
-        void set_pos(float, float);
+        ekg::ui::frame *set_pos(float x, float y);
         ekg::vec2 get_pos();
 
-        void set_width(float);
+        ekg::ui::frame *set_width(float w);
         float get_width();
 
-        void set_height(float);
+        ekg::ui::frame *set_height(float h);
         float get_height();
     };
 }

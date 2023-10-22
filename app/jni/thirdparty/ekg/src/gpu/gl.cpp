@@ -1,34 +1,33 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
+ * MIT License
+ * 
+ * Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
-#include "ekg/gpu/gl.hpp"
-#include "ekg/os/info.hpp"
-#include "ekg/util/env.hpp"
 #include <vector>
 
-void ekg::gpu::init_opengl_context() {
-    switch (ekg::os) {
-        case ekg::platform::os_android: {
-            // Ignore.
-            break;
-        }
-
-        default: {
-            break;
-        }
-    }
-}
+#include "ekg/gpu/gl.hpp"
+#include "ekg/os/platform.hpp"
+#include "ekg/util/io.hpp"
+#include "ekg/os/ekg_opengl.hpp"
 
 void ekg::gpu::invoke(ekg::gpu::program &program) {
     glUseProgram(program.id);
@@ -40,7 +39,7 @@ void ekg::gpu::revoke() {
 
 bool ekg::gpu::create_basic_program(ekg::gpu::program &program, const std::unordered_map<std::string, uint32_t> &resources) {
     if (resources.empty()) {
-        ekg::log(ekg::log::ERROR) << "Invalid shader, empty resources";
+        ekg::log() << "Error: Invalid shader, empty resources";
         return true;
     }
 
@@ -49,6 +48,7 @@ bool ekg::gpu::create_basic_program(ekg::gpu::program &program, const std::unord
     int32_t status {};
     program.id = glCreateProgram();
 
+    std::string msg  {};
     for (auto &[value, key] : resources) {
         uint32_t shader {glCreateShader(key)};
         const char *p_src {value.c_str()};
@@ -58,9 +58,9 @@ bool ekg::gpu::create_basic_program(ekg::gpu::program &program, const std::unord
         glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
         if (status == GL_FALSE) {
             glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &status);
-            std::string msg {}; msg.resize(status);
+            msg.resize(status);
             glGetShaderInfoLog(shader, status, nullptr, msg.data());
-            ekg::log(ekg::log::ERROR) << "Failed to compile shader stage: \n" << msg;
+            ekg::log() << "Error: Failed to compile shader stage: \n" << msg;
             break;
         }
 
@@ -83,9 +83,9 @@ bool ekg::gpu::create_basic_program(ekg::gpu::program &program, const std::unord
 
         if (status == GL_FALSE) {
             glGetProgramiv(program.id, GL_INFO_LOG_LENGTH, &status);
-            std::string msg {}; msg.resize(status);
+            msg.resize(status);
             glGetProgramInfoLog(program.id, status, nullptr, msg.data());
-            ekg::log(ekg::log::ERROR) << "Failed to link program: \n" << msg;
+            ekg::log() << "Error: Failed to link program: \n" << msg;
         }
     }
 
@@ -96,38 +96,38 @@ void ekg::gpu::program::set(const std::string &str, bool value) {
     glUniform1i(glGetUniformLocation(this->id, str.c_str()), value);
 }
 
-void ekg::gpu::program::set(const std::string &str, GLint value) {
+void ekg::gpu::program::set(const std::string &str, int32_t value) {
     glUniform1i(glGetUniformLocation(this->id, str.c_str()), value);
 }
 
-void ekg::gpu::program::set(const std::string &str, GLuint value) {
+void ekg::gpu::program::set(const std::string &str, uint32_t value) {
     glUniform1ui(glGetUniformLocation(this->id, str.c_str()), value);
 }
 
-void ekg::gpu::program::set(const std::string &str, GLfloat value) {
+void ekg::gpu::program::set(const std::string &str, float value) {
     glUniform1f(glGetUniformLocation(this->id, str.c_str()), value);
 }
 
-void ekg::gpu::program::set2(const std::string &str, GLfloat *value) {
+void ekg::gpu::program::set2(const std::string &str, float *value) {
     glUniform2fv(glGetUniformLocation(this->id, str.c_str()), GL_TRUE, value);
 }
 
-void ekg::gpu::program::set3(const std::string &str, GLfloat *value) {
+void ekg::gpu::program::set3(const std::string &str, float *value) {
     glUniform3fv(glGetUniformLocation(this->id, str.c_str()), GL_TRUE, value);
 }
 
-void ekg::gpu::program::set4(const std::string &str, GLfloat *value) {
+void ekg::gpu::program::set4(const std::string &str, float *value) {
     glUniform4fv(glGetUniformLocation(this->id, str.c_str()), GL_TRUE, value);
 }
 
-void ekg::gpu::program::setm2(const std::string &str, GLfloat *matrix) {
+void ekg::gpu::program::setm2(const std::string &str, float *matrix) {
     glUniformMatrix2fv(glGetUniformLocation(this->id, str.c_str()), GL_TRUE, GL_FALSE, matrix);
 }
 
-void ekg::gpu::program::setm3(const std::string &str, GLfloat *matrix) {
+void ekg::gpu::program::setm3(const std::string &str, float *matrix) {
     glUniformMatrix3fv(glGetUniformLocation(this->id, str.c_str()), GL_TRUE, GL_FALSE, matrix);
 }
 
-void ekg::gpu::program::setm4(const std::string &str, GLfloat *matrix) {
+void ekg::gpu::program::setm4(const std::string &str, float *matrix) {
     glUniformMatrix4fv(glGetUniformLocation(this->id, str.c_str()), GL_TRUE, GL_FALSE, matrix);
 }

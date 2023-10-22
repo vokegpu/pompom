@@ -1,16 +1,26 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
- */
+* MIT License
+* 
+* Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+* 
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+* 
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+* 
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*/
 
 #include "ekg/ui/slider/ui_slider_widget.hpp"
 #include "ekg/ui/slider/ui_slider.hpp"
@@ -18,11 +28,15 @@
 #include "ekg/draw/draw.hpp"
 
 void ekg::ui::slider_widget::update_bar(float x, float y) {
-    auto ui {(ekg::ui::slider*) this->data};
+    auto p_ui {(ekg::ui::slider*) this->p_data};
     auto &rect {this->get_abs_rect()};
     auto bar {this->rect_bar + rect};
-    auto orientation {ui->get_bar_align()};
-    float factor {}, dimension_factor {}, min {ui->get_value_min()}, max {ui->get_value_max()};
+    auto orientation {p_ui->get_bar_align()};
+    
+    float factor {};
+    float dimension_factor {};
+    float min {p_ui->get_value_min()};
+    float max {p_ui->get_value_max()};
 
     switch (orientation) {
         case ekg::dock::left: {
@@ -37,32 +51,28 @@ void ekg::ui::slider_widget::update_bar(float x, float y) {
     }
 
     if (factor == 0) {
-        factor = ui->get_value_min();
+        factor = p_ui->get_value_min();
     } else {
         factor = (factor / dimension_factor) * (max - min) + min;
     }
 
-    ui->set_value(factor);
-}
-
-void ekg::ui::slider_widget::on_destroy() {
-    abstract_widget::on_destroy();
+    p_ui->set_value(factor);
 }
 
 void ekg::ui::slider_widget::on_reload() {
     abstract_widget::on_reload();
 
-    auto ui {(ekg::ui::slider*) this->data};
+    auto p_ui {(ekg::ui::slider*) this->p_data};
     auto &rect {this->get_abs_rect()};
-    auto &f_renderer {ekg::f_renderer(ui->get_font_size())};
-    auto text_dock_flags {ui->get_text_align()};
-    auto bar_dock_flags {ui->get_bar_align()};
-    auto bar_axis {ui->get_bar_axis()};
+    auto &f_renderer {ekg::f_renderer(p_ui->get_font_size())};
+    auto text_dock_flags {p_ui->get_text_align()};
+    auto bar_dock_flags {p_ui->get_bar_align()};
+    auto bar_axis {p_ui->get_bar_axis()};
     auto &theme {ekg::theme()};
-    auto value_precision {ui->get_precision()};
+    auto value_precision {p_ui->get_precision()};
 
     float text_height {f_renderer.get_text_height()};
-    float value {ui->get_value()}, min {ui->get_value_min()}, max {ui->get_value_max()};
+    float value {p_ui->get_value()}, min {p_ui->get_value_min()}, max {p_ui->get_value_max()};
 
     std::string max_string {ekg::string_float_precision(max, value_precision)};
     std::string min_string {ekg::string_float_precision(min, value_precision)};
@@ -76,14 +86,14 @@ void ekg::ui::slider_widget::on_reload() {
 
     float dimension_offset {text_height / 2};
     float offset {ekg::find_min_offset(text_width, dimension_offset)};
-    float dimension_height {(text_height + dimension_offset) * static_cast<float>(ui->get_scaled_height())};
+    float dimension_height {(text_height + dimension_offset) * static_cast<float>(p_ui->get_scaled_height())};
 
     float normalised_bar_thickness {static_cast<float>(theme.slider_bar_thickness) / 100};
     float normalised_target_thickness {static_cast<float>(theme.slider_target_thickness) / 100};
-    auto &layout {ekg::core->get_service_layout()};
+    auto &layout {ekg::core->service_layout};
     bool centered_text {text_dock_flags == ekg::dock::center};
 
-    this->dimension.w = ekg::min(this->dimension.w, text_height);
+    this->dimension.w = ekg::min(this->dimension.w, text_width);
     this->dimension.h = dimension_height;
 
     this->min_size.x = ekg::min(this->min_size.x, text_height);
@@ -161,66 +171,64 @@ void ekg::ui::slider_widget::on_reload() {
 
 void ekg::ui::slider_widget::on_pre_event(SDL_Event &sdl_event) {
     abstract_widget::on_pre_event(sdl_event);
+
+    this->flag.state = (this->flag.hovered && ekg::input::action("slider-bar-modifier") && (ekg::input::action("slider-bar-increase") || ekg::input::action("slider-bar-decrease")));
+    this->flag.absolute = this->flag.state;
 }
 
 void ekg::ui::slider_widget::on_event(SDL_Event &sdl_event) {
-    abstract_widget::on_event(sdl_event);
-
-    auto ui {(ekg::ui::slider*) this->data};
+    auto p_ui {(ekg::ui::slider*) this->p_data};
     auto &rect {this->get_abs_rect()};
-    auto &interact {ekg::interact()};
-    bool pressed {ekg::input::pressed()}, released {ekg::input::released()}, motion {ekg::input::motion()}, increase {}, descrease {};
+    auto &interact {ekg::input::interact()};
+    
+    bool pressed {ekg::input::pressed()};
+    bool released {ekg::input::released()};
+    bool motion {ekg::input::motion()};
 
     if (motion || pressed || released) {
         ekg::set(this->flag.highlight, this->flag.hovered && ekg::rect_collide_vec(this->rect_bar + rect, interact));
     }
 
+    this->flag.absolute = this->flag.absolute || this->flag.activy;
     this->flag.hovered = this->flag.hovered && this->flag.highlight;
 
-    if (this->flag.hovered && ((increase = ekg::input::action("slider-bar-increase")) || (descrease = ekg::input::action(
-            "slider-bar-decrease")))) {
-        ui->set_value(ui->get_value() + (interact.w));
+    if (this->flag.state) {
+        p_ui->set_value(p_ui->get_value() + (interact.w));
     } else if (this->flag.hovered && pressed && ekg::input::action("slider-activy")) {
         this->flag.activy = true;
-        ui->set_dragging(true);
+        p_ui->set_dragging(true);
         this->update_bar(interact.x, interact.y);
+        this->flag.absolute = true;
     } else if  (released) {
         if (this->flag.activy) {
-            ekg::dispatch_ui_event(ui->get_tag().empty() ? "Unknown Slider UI" : ui->get_tag(), std::to_string(ui->get_value()), (uint16_t) ui->get_type());
+            ekg::dispatch_ui_event(p_ui->get_tag().empty() ? ("unknown slider id " + std::to_string(p_ui->get_id())) : p_ui->get_tag(), std::to_string(p_ui->get_value()), (uint16_t) p_ui->get_type());
         }
 
+        this->flag.absolute = false;
         this->flag.activy = false;
-        ui->set_dragging(false);
+        p_ui->set_dragging(false);
     } else if (this->flag.activy && motion) {
         this->update_bar(interact.x, interact.y);
     }
 }
 
-void ekg::ui::slider_widget::on_post_event(SDL_Event &sdl_event) {
-    abstract_widget::on_post_event(sdl_event);
-}
-
-void ekg::ui::slider_widget::on_update() {
-    abstract_widget::on_update();
-}
-
 void ekg::ui::slider_widget::on_draw_refresh() {
     abstract_widget::on_draw_refresh();
-    auto ui {(ekg::ui::slider*) this->data};
+    auto p_ui {(ekg::ui::slider*) this->p_data};
     auto &rect {this->get_abs_rect()};
     auto &theme {ekg::theme()};
     auto &f_renderer {ekg::f_renderer(this->font_render_size)};
     auto bar {this->rect_bar + rect}, bar_value {this->rect_bar_value + rect};;
 
-    ekg::draw::bind_scissor(ui->get_id());
-    ekg::draw::sync_scissor_pos(rect.x, rect.y);
+    ekg::draw::bind_scissor(p_ui->get_id());
+    ekg::draw::sync_scissor(rect, p_ui->get_parent_id());
     ekg::draw::rect(bar, theme.slider_background);
 
     if (this->flag.highlight) {
         ekg::draw::rect(bar, theme.slider_highlight);
     }
     
-    ekg::draw::rect(this->rect_target + rect, theme.slider_activy, ekg::drawmode::circle);
+    ekg::draw::rect(this->rect_target + rect, theme.slider_activy, ekg::draw_mode::circle);
     ekg::draw::rect(bar.x, bar.y, bar_value.w, bar_value.h, theme.slider_activy_bar);
 
     f_renderer.blit(this->string_value, rect.x + this->rect_text.x, rect.y + this->rect_text.y, theme.slider_string);

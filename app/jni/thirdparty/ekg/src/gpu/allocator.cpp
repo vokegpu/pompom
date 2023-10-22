@@ -1,24 +1,36 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
- */
+* MIT License
+* 
+* Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+* 
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+* 
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+* 
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*/
 
 #include "ekg/gpu/allocator.hpp"
 #include "ekg/ekg.hpp"
 #include "ekg/gpu/gl.hpp"
+#include "ekg/os/ekg_opengl.hpp"
 
 ekg::gpu::program ekg::gpu::allocator::program {};
-float ekg::gpu::allocator::mat4x4orthographic[16] {};
-float ekg::gpu::allocator::viewport[4] {};
+float             ekg::gpu::allocator::mat4x4orthographic[16] {};
+float             ekg::gpu::allocator::viewport[4] {};
+bool              ekg::gpu::allocator::is_out_of_scissor {};
 
 void ekg::gpu::allocator::invoke() {
     /* reset all "flags", everything is used tick by tick to compare factories */
@@ -26,16 +38,23 @@ void ekg::gpu::allocator::invoke() {
     this->data_instance_index = 0;
     this->begin_stride_count = 0;
     this->end_stride_count = 0;
-    this->simple_shape_index = -1;
+    this->simple_shape_index = 0;
+
+    this->push_back_geometry(0.0f, 0.0f, 0.0f, 0.0f);
+    this->push_back_geometry(0.0f, 1.0f, 0.0f, 1.0f);
+    this->push_back_geometry(1.0f, 0.0f, 1.0f, 0.0f);
+    this->push_back_geometry(1.0f, 1.0f, 1.0f, 1.0f);
 
     /* unique shape data will break if not clear the first index. */
 
     this->clear_current_data();
-    this->bind_current_data().begin_stride = this->begin_stride_count; // reset to 0
+    this->bind_current_data().begin_stride = this->end_stride_count;
+    this->begin_stride_count += this->end_stride_count;
+    this->end_stride_count = 0;
 }
 
-void ekg::gpu::allocator::bind_texture(uint32_t &texture) {
-    bool should_alloc_new_texture {};
+void ekg::gpu::allocator::bind_texture(uint32_t texture) {
+    bool should_alloc_new_texture {true};
     uint8_t texture_slot {};
 
     /* repeating textures increase the active textures, for this reason allocator prevent "dupes" */
@@ -56,8 +75,7 @@ void ekg::gpu::allocator::bind_texture(uint32_t &texture) {
     }
 
     auto &data {this->bind_current_data()};
-    data.material_texture = texture;
-    data.active_tex_slot = texture_slot;
+    data.active_tex_slot = texture_slot + 1;
 }
 
 void ekg::gpu::allocator::dispatch() {
@@ -66,14 +84,9 @@ void ekg::gpu::allocator::dispatch() {
     /* if this data contains a simple rect shape scheme, save this index and reuse later */
 
     this->simple_shape = static_cast<int32_t>(data.shape_rect[2]) != ekg::concave && static_cast<int32_t>(data.shape_rect[3]) != ekg::concave;
-    if (this->simple_shape_index == -1 && this->simple_shape) {
-        this->simple_shape_index = this->begin_stride_count;
-        this->begin_stride_count += this->end_stride_count;
-    }
-
     if (this->simple_shape) {
         data.begin_stride = this->simple_shape_index;
-        data.end_stride = 6; // simple shape contains 6 vertices.
+        data.end_stride = 4; // simple shape contains 4 vertices.
         this->end_stride_count = 0;
     } else {
         data.begin_stride = this->begin_stride_count;
@@ -97,37 +110,32 @@ void ekg::gpu::allocator::dispatch() {
 }
 
 void ekg::gpu::allocator::revoke() {
-    bool should_re_alloc_buffers {this->previous_data_list_size != this->data_instance_index};
+    uint64_t cached_geometry_resources_size {this->cached_geometry_resources.size()};
+    bool should_re_alloc_buffers {this->previous_cached_geometry_resources_size != cached_geometry_resources_size};
 
-    if (should_re_alloc_buffers) {
-        this->data_list.resize(this->data_instance_index);
+    if (this->data_instance_index < this->data_list.size()) {
+        this->data_list.erase(this->data_list.begin() + this->data_instance_index + 1, this->data_list.end());
     }
 
-    should_re_alloc_buffers = should_re_alloc_buffers || this->factor_changed;
-
-    this->previous_data_list_size = this->data_instance_index;
-    this->factor_changed = false;
-
-    if (should_re_alloc_buffers) {
+    this->previous_cached_geometry_resources_size = cached_geometry_resources_size;
+    if (should_re_alloc_buffers || this->factor_changed) {
         glBindVertexArray(this->vbo_array);
-        /* set shader binding location 0 and dispatch mesh of vertices collected by allocator */
+        glBindBuffer(GL_ARRAY_BUFFER, this->geometry_buffer);
 
-        glBindBuffer(GL_ARRAY_BUFFER, this->vbo_vertices);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * cached_geometry_resources_size, this->cached_geometry_resources.data(), GL_STATIC_DRAW);
+
         glEnableVertexAttribArray(0);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * this->cached_vertices.size(), &this->cached_vertices[0], GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*) 0);
 
-        /* set shader binding location 1 and dispatch mesh of texttre coordinates collected by allocator */
-        glBindBuffer(GL_ARRAY_BUFFER, this->vbo_uvs);
         glEnableVertexAttribArray(1);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * this->cached_uvs.size(), &this->cached_uvs[0], GL_STATIC_DRAW);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*) (sizeof(float) * 2));
+
+        //glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
     }
 
-    this->cached_textures.clear();
-    this->cached_vertices.clear();
-    this->cached_uvs.clear();
+    this->factor_changed = false;
+    this->cached_geometry_resources = {};
 }
 
 void ekg::gpu::allocator::on_update() {
@@ -135,77 +143,64 @@ void ekg::gpu::allocator::on_update() {
 
 void ekg::gpu::allocator::draw() {
     ekg::gpu::invoke(ekg::gpu::allocator::program);
-    glBindVertexArray(this->vbo_array);
 
-    bool active_texture {}, texture_enabled {};
-    ekg::gpu::scissor *scissor {};
+    glBindVertexArray(this->vbo_array);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    GLboolean is_depth_test_previous_enable {};
-    glGetBooleanv(GL_DEPTH_TEST, &is_depth_test_previous_enable);
-    glDisable(GL_DEPTH_TEST);
+    uint8_t prev_texture_bound {};
+    bool texture_enabled {};
 
     /*
-     * The batching system of gpu allocator use instanced rendering concept, if there is some simple shape rect
-     * (gpu data rect that contains x, y, w & h rectangle), allocator reuse this to every draw call.
-     * For text rendering, allocator do draw calls per text, or be, rendering a long text only use one draw call!
-     *
-     * Why there is glUniforms direct calls? I think it can reduce some wrappers runtime calls, but only here.
-     * What is the depth level? That is the layer level of current gpu data rendered, processing layer depth testing.
-     *
-     * VokeGpu coded powerfully gpu allocator for drawing UIs, the batching system has scissor & others
-     * important draw features for UI context.
+     * Before each rendering section, the allocator iterate alls textures and bind it on global context.
+     */
+    for (uint32_t it {}; it < this->cached_textures.size(); it++) {
+        glActiveTexture(GL_TEXTURE0 + static_cast<int32_t>(it));
+        glBindTexture(GL_TEXTURE_2D, this->cached_textures.at(it));
+    }
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    /*
+     * The allocator provides a high-performance dynamic mapped-shapes batching,
+     * each simple rect (not a complex shape) is not batched, but complex shapes
+     * like textured shapes - font rendering - is batched.
      */
 
-    for (ekg::gpu::data &data : this->data_list) {
-        active_texture = data.material_texture != 0;
+    for (uint64_t it {}; it < this->data_instance_index; it++) {
+        ekg::gpu::data &data {this->data_list.at(it)};
+        texture_enabled = data.active_tex_slot > 0;
 
-        if (active_texture) {
-            glActiveTexture(GL_TEXTURE0 + static_cast<int32_t>(data.active_tex_slot));
-            glBindTexture(GL_TEXTURE_2D, data.material_texture);
+        if (texture_enabled && prev_texture_bound != data.active_tex_slot) {
+            glUniform1i(this->uniform_active_tex_slot, data.active_tex_slot - 1);
             glUniform1i(this->uniform_active_texture, true);
-            texture_enabled = true;
-        }
-
-        if (texture_enabled && !active_texture) {
+            prev_texture_bound = data.active_tex_slot;
+        } else if (!texture_enabled && prev_texture_bound > 0) {
             glUniform1i(this->uniform_active_texture, false);
-            glBindTexture(GL_TEXTURE_2D, 0);
+            prev_texture_bound = 0;
         }
 
         glUniform4fv(this->uniform_color, GL_TRUE, data.material_color);
         glUniform4fv(this->uniform_rect, GL_TRUE, data.shape_rect);
         glUniform1i(this->uniform_line_thickness, data.line_thickness);
+        glUniform4fv(this->uniform_scissor, GL_TRUE, this->scissor_map[data.scissor_id].rect);
 
-        /* allocator use 6 vertices to draw, no need element buffer object */
-
-        switch (data.scissor_id) {
-            case -1: {
-                glUniform1i(this->uniform_enable_scissor, false);
+        switch (data.begin_stride) {
+            case 0: {
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, nullptr);
                 break;
             }
 
             default: {
-                scissor = this->get_scissor_by_id(data.scissor_id);
-                if (scissor == nullptr) {
-                    break;
-                }
-
-                glUniform1i(this->uniform_enable_scissor, true);
-                glUniform4fv(this->uniform_scissor, GL_TRUE, scissor->rect);
+                glDrawArrays(GL_TRIANGLES, data.begin_stride, data.end_stride);
                 break;
             }
         }
-
-        glDrawArrays(GL_TRIANGLES, data.begin_stride, data.end_stride);
     }
 
-    if (texture_enabled) {
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
-    if (is_depth_test_previous_enable) {
-        glEnable(GL_DEPTH_TEST);
-    }
+    glUniform1i(this->uniform_active_texture, false);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_BLEND);
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -213,17 +208,28 @@ void ekg::gpu::allocator::draw() {
 
 void ekg::gpu::allocator::init() {
     glGenVertexArrays(1, &this->vbo_array);
-    glGenBuffers(1, &this->vbo_vertices);
-    glGenBuffers(1, &this->vbo_uvs);
+    glGenBuffers(1, &this->geometry_buffer);
+    glGenBuffers(1, &this->ebo_simple_shape);
+
+    /* Generate base shape rendering. */
+    uint8_t simple_shape_mesh_indices[6] {
+        0, 2, 3,
+        3, 1, 0
+    };
+
+    glBindVertexArray(this->vbo_array);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo_simple_shape);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(simple_shape_mesh_indices), simple_shape_mesh_indices, GL_STATIC_DRAW);
+    glBindVertexArray(0);
 
     /* reduce glGetLocation calls when rendering the batch */
     auto &shading_program_id {ekg::gpu::allocator::program.id};
     this->uniform_active_texture = glGetUniformLocation(shading_program_id, "uActiveTexture");
+    this->uniform_active_tex_slot = glGetUniformLocation(shading_program_id, "uTextureSampler");
     this->uniform_color = glGetUniformLocation(shading_program_id, "uColor");
     this->uniform_rect = glGetUniformLocation(shading_program_id, "uRect");
     this->uniform_line_thickness = glGetUniformLocation(shading_program_id, "uLineThickness");
     this->uniform_scissor = glGetUniformLocation(shading_program_id, "uScissor");
-    this->uniform_enable_scissor = glGetUniformLocation(shading_program_id, "uEnableScissor");
 
     ekg::log() << "GPU allocator initialised";
 }
@@ -236,9 +242,7 @@ void ekg::gpu::allocator::clear_current_data() {
     }
 
     ekg::gpu::data &data {this->bind_current_data()};
-
     data.line_thickness = 0;
-    data.material_texture = 0;
     data.active_tex_slot = 0;
     data.scissor_id = -1;
 
@@ -246,14 +250,14 @@ void ekg::gpu::allocator::clear_current_data() {
 }
 
 ekg::gpu::data &ekg::gpu::allocator::bind_current_data() {
-    return this->data_list[this->data_instance_index];
+    return this->data_list.at(this->data_instance_index);
 }
 
 uint32_t ekg::gpu::allocator::get_current_data_id() {
     return this->data_instance_index;
 }
 
-ekg::gpu::data* ekg::gpu::allocator::get_data_by_id(int32_t id) {
+ekg::gpu::data *ekg::gpu::allocator::get_data_by_id(int32_t id) {
     if (id < 0 || id > this->data_instance_index) {
         return nullptr;
     }
@@ -264,7 +268,6 @@ ekg::gpu::data* ekg::gpu::allocator::get_data_by_id(int32_t id) {
 void ekg::gpu::allocator::quit() {
     glDeleteTextures((int32_t) this->cached_textures.size(), &this->cached_textures[0]);
     glDeleteBuffers(1, &this->vbo_array);
-    glDeleteBuffers(1, &this->vbo_uvs);
     glDeleteVertexArrays(1, &this->vbo_array);
 }
 
@@ -282,10 +285,47 @@ uint32_t ekg::gpu::allocator::get_instance_scissor_id() {
     return this->scissor_instance_id;
 }
 
-void ekg::gpu::allocator::sync_scissor_pos(float x, float y) {
+void ekg::gpu::allocator::sync_scissor(ekg::rect &rect_child, int32_t mother_parent_id) {
     auto &scissor {this->scissor_map[this->scissor_instance_id]};
-    // scissor.rect[0] = x;
-    // scissor.rect[1] = y;
+
+    scissor.rect[0] = rect_child.x;
+    scissor.rect[1] = rect_child.y;
+    scissor.rect[2] = rect_child.w;
+    scissor.rect[3] = rect_child.h;
+
+    ekg::gpu::allocator::is_out_of_scissor = false;
+
+    /*
+     * The EKG rendering clipping/scissor part solution is actually very simple,
+     * each draws section contains an ID, which map for a scissor data,
+     * when batching is going on, the scissor is automatically fixed together.
+     */
+    if (mother_parent_id == 0) {
+        return;
+    }
+
+    auto &mother_rect {this->scissor_map[mother_parent_id]};
+
+    if (scissor.rect[0] < mother_rect.rect[0]) {
+        scissor.rect[2] -= mother_rect.rect[0] - scissor.rect[0];
+        scissor.rect[0] = mother_rect.rect[0];
+    }
+
+    if (scissor.rect[1] < mother_rect.rect[1]) {
+        scissor.rect[3] -= mother_rect.rect[1] - scissor.rect[1];
+        scissor.rect[1] = mother_rect.rect[1];
+    }
+
+    if (scissor.rect[0] + scissor.rect[2] > mother_rect.rect[0] + mother_rect.rect[2]) {
+        scissor.rect[2] -= (scissor.rect[0] + scissor.rect[2]) - (mother_rect.rect[0] + mother_rect.rect[2]);
+    }
+
+    if (scissor.rect[1] + scissor.rect[3] > mother_rect.rect[1] + mother_rect.rect[3]) {
+        scissor.rect[3] -= (scissor.rect[1] + scissor.rect[3]) - (mother_rect.rect[1] + mother_rect.rect[3]);
+    }
+
+    ekg::gpu::allocator::is_out_of_scissor = !(scissor.rect[0] < mother_rect.rect[0] + mother_rect.rect[2] && scissor.rect[0] + scissor.rect[2] > mother_rect.rect[0] &&
+                                                   scissor.rect[1] < mother_rect.rect[1] + mother_rect.rect[3] && scissor.rect[1] + scissor.rect[3] > mother_rect.rect[1]); 
 }
 
 void ekg::gpu::allocator::bind_scissor(int32_t scissor_id) {
@@ -296,27 +336,11 @@ void ekg::gpu::allocator::bind_off_scissor() {
     this->scissor_instance_id = -1;
 }
 
-void ekg::gpu::allocator::vertex2f(float x, float y) {
-    if (this->check_convex_shape()) {
-        return;
-    }
-
-    this->cached_vertices.push_back(x);
-    this->cached_vertices.push_back(y);
+void ekg::gpu::allocator::push_back_geometry(float x, float y, float u, float v) {
+    this->cached_geometry_resources.emplace_back(x);
+    this->cached_geometry_resources.emplace_back(y);
     this->end_stride_count++;
-}
 
-void ekg::gpu::allocator::coord2f(float x, float y) {
-    if (this->check_convex_shape()) {
-        return;
-    }
-
-    this->cached_uvs.push_back(x);
-    this->cached_uvs.push_back(y);
-}
-
-bool ekg::gpu::allocator::check_convex_shape() {
-    auto &data {this->bind_current_data()};
-    this->simple_shape = static_cast<int32_t>(data.shape_rect[2]) != ekg::concave && static_cast<int32_t>(data.shape_rect[3]) != ekg::concave;
-    return this->simple_shape_index != -1 && this->simple_shape;
+    this->cached_geometry_resources.emplace_back(u);
+    this->cached_geometry_resources.emplace_back(v);
 }

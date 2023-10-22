@@ -1,42 +1,66 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
+ * MIT License
+ * 
+ * Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef EKG_UI_ABSTRACT_H
 #define EKG_UI_ABSTRACT_H
 
-#include "ekg/core/feature.hpp"
 #include "ekg/util/geometry.hpp"
-#include "ekg/util/env.hpp"
+#include "ekg/util/aspect.hpp"
 #include <vector>
 
 namespace ekg {
-    enum class state {
-        visible, invisible
-    };
-
     enum class type {
-        abstract, frame, button, label, slider, slider2d, checkbox, textbox, entrybox, combobox, tab, popup, scroll
+        abstract, frame, button, label, slider, slider2d, checkbox, textbox, combobox, listbox, tab, popup, scroll
     };
 
-    enum class uisync {
-        reset = 1, dimension = 2
+    enum class level {
+        bottom_level, top_level 
+    };
+
+    enum class ui_sync {
+        reset     = 1,
+        dimension = 2
     };
 
     namespace ui {
-        class abstract : public ekg::feature {
+        struct item {
+        public:
+            std::string name {};
+            bool value {};
+            uint32_t id {};
+            uint32_t linked_id {};
+            uint16_t attributes {};
+        public:
+            ekg::rect rect_dimension {};
+            ekg::rect rect_content {};
+            ekg::rect rect_box {};
+        };
+
+        class abstract {
         protected:
-            int32_t id {}, parent_id {};
+            int32_t id {};
+            int32_t parent_id {};
             std::vector<int32_t> child_id_list {};
 
             bool alive {true};
@@ -46,35 +70,41 @@ namespace ekg {
 
             ekg::state state {};
             ekg::type type {ekg::type::abstract};
+            ekg::level level {};
             ekg::rect rect_widget {};
             ekg::rect sync_ui {};
         
             int32_t scaled_height {};
         public:
+            ekg::ui::abstract *unsafe_set_scaled_height_layout(int32_t scaled_size);
+        public:
             abstract();
             ~abstract();
 
-            void set_tag(std::string_view);
-            std::string get_tag();
+            void set_level(ekg::level level);
+            ekg::level get_level();
 
-            void add_child(int32_t);
+            ekg::ui::abstract *set_tag(std::string_view tag);
+            std::string_view get_tag();
+
+            ekg::ui::abstract *add_child(int32_t id);
             std::vector<int32_t> &get_child_id_list();
-            void remove_child(int32_t);
+            ekg::ui::abstract *remove_child(int32_t id);
 
-            void set_id(int32_t);
+            ekg::ui::abstract *set_id(int32_t id);
             int32_t get_id();
 
-            void set_parent_id(int32_t);
+            ekg::ui::abstract *set_parent_id(int32_t parent_id);
             int32_t get_parent_id();
 
-            void set_alive(bool);
+            ekg::ui::abstract *set_alive(bool is_alive);
             bool is_alive();
             void destroy();
 
-            void set_state(const ekg::state&);
+            ekg::ui::abstract *set_state(const ekg::state &_state);
             ekg::state get_state();
 
-            void set_type(const ekg::type&);
+            ekg::ui::abstract *set_type(const ekg::type &_type);
             ekg::type get_type();
 
             uint16_t get_place_dock();
@@ -84,7 +114,6 @@ namespace ekg {
             ekg::rect &widget();
             ekg::rect &ui();
 
-            void set_scaled_height_layout(int32_t);
             bool has_parent();
             bool has_children();
         };

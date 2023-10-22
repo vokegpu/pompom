@@ -15,33 +15,31 @@
 #ifndef EKG_SERVICE_INPUT_H
 #define EKG_SERVICE_INPUT_H
 
-#include "ekg/util/env.hpp"
+#include "ekg/util/io.hpp"
 #include "ekg/util/geometry.hpp"
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include "ekg/os/ekg_sdl.hpp"
 
 namespace ekg::service {
         class input {
         protected:
-            static std::map<std::string, const char*> special_keys_name_map;
+            static std::unordered_map<std::string, const char*> special_keys_name_map;
 
-            std::map<std::string, std::vector<std::string>> input_bind_map {};
-            std::map<std::string, bool> input_register_map {}, input_map {};
-            std::map<int32_t, std::string> special_keys_sdl_map {};
+            std::unordered_map<std::string, std::vector<std::string>> input_bind_map {};
+            std::unordered_map<std::string, bool> input_register_map {};
+            std::unordered_map<std::string, bool> input_map {};
+            std::unordered_map<int32_t, std::string> special_keys_sdl_map {};
 
             std::vector<std::string> special_keys_unit_pressed {};
-            std::vector<std::string> special_keys_released {};
             std::vector<std::string> double_click_mouse_buttons_pressed {};
             std::vector<std::string> input_register_callback {};
             std::vector<std::string> input_released_list {};
+            std::vector<std::string> immediate_register_list {};
 
-            bool pressed_event {};
-            bool released_event {};
-            bool motion_event {};
-            bool wheel_event {};
             bool finger_hold_event {};
             bool finger_swipe_event {};
+            bool is_special_keys_released {};
 
             ekg::vec4 last_finger_interact {};
             ekg::timing double_interact {};
@@ -52,15 +50,18 @@ namespace ekg::service {
         public:
             ekg::timing timing_last_interact {};
             ekg::vec4 interact {};
-        public:
-            bool was_pressed();
-            bool was_released();
-            bool was_motion();
-            bool was_wheel();
 
+            bool was_pressed {};
+            bool was_released {};
+            bool has_motion {};
+            bool was_wheel {};
+            bool was_typed {};
+        public:
             void bind(std::string_view input_tag, std::string_view key);
             void unbind(std::string_view input_tag, std::string_view key);
             void callback(std::string_view key, bool callback);
+            void fire(std::string_view key);
+
             bool pressed(std::string_view key);
             bool receive(std::string_view key);
 

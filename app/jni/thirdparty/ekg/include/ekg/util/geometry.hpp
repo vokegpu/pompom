@@ -1,31 +1,43 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
- */
+* MIT License
+* 
+* Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+* 
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+* 
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+* 
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*/
 
 #ifndef EKG_UTIL_GEOMETRY_H
 #define EKG_UTIL_GEOMETRY_H
 
 #include <iostream>
+#include <cstdint>
 #include <cfloat>
 #include <cmath>
 
-#define EQUALS_FLOAT(x, y) (\
-(fabsf((x) - (y))) <= FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
+#define ekg_equals_float(x, y) ((fabsf((x) - (y))) <= FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
+#define ekg_pixel_div_2        (0.500000f)
 
 namespace ekg {
     extern double pi;
 
     struct display {
+    public:
         static float dt;
         static int32_t width;
         static int32_t height;
@@ -33,36 +45,36 @@ namespace ekg {
 
     enum dock {
         none   = 0,
-        free   = 1,
-        top    = 2,
-        bottom = 4,
-        right  = 8,
-        left   = 16,
-        center = 32,
-        full   = 64,
-        next   = 128,
-        fill   = 256,
-        resize = 512
-
+        free   = 2 << 2,
+        top    = 2 << 3,
+        bottom = 2 << 4,
+        right  = 2 << 5,
+        left   = 2 << 6,
+        center = 2 << 7,
+        full   = 2 << 8,
+        next   = 2 << 9,
+        fill   = 2 << 10,
+        resize = 2 << 11 
     };
 
     /*
      * Enum linked to dock.
      */
     enum axis {
-        vertical   = 1024,
-        horizontal = 2048
+        vertical   = 12 << 2,
+        horizontal = 13 << 2
     };
 
     typedef struct vec2 {
+    public:
         union {
             struct {
                 float x {};
                 float y {};
             };
         };
-
-        inline explicit vec2() {};
+    public:
+        inline vec2() {};
         inline vec2(float _x, float _y) {
             this->x = _x;
             this->y = _y;
@@ -72,6 +84,7 @@ namespace ekg {
     ekg::vec2 operator/(const ekg::vec2&, float);
 
     typedef struct vec3 {
+    public:
         union {
             struct {
                 float x {};
@@ -79,8 +92,8 @@ namespace ekg {
                 float z {};
             };
         };
-
-        inline explicit vec3() {};
+    public:
+        inline vec3() {};
         inline vec3(float _x, float _y, float _z) {
             this->x = _x;
             this->y = _y;
@@ -89,6 +102,7 @@ namespace ekg {
     } vec3;
 
     typedef struct vec4 {
+    public:
         union {
             struct {
                 float x {};
@@ -97,8 +111,8 @@ namespace ekg {
                 float w {};
             };
         };
-
-        inline explicit vec4() {};
+    public:
+        inline vec4() {};
         inline vec4(float _x, float _y, float _z, float _w) {
             this->x = _x;
             this->y = _y;
@@ -136,6 +150,7 @@ namespace ekg {
     } vec4;
 
     typedef struct rect {
+    public:
         union {
             struct {
                 float x {};
@@ -144,8 +159,8 @@ namespace ekg {
                 float h {};
             };
         };
-
-        inline explicit rect() {};
+    public:
+        inline rect() {};
         inline rect(float _x, float _y, float _w, float _h) {
             this->x = _x;
             this->y = _y;
@@ -195,29 +210,38 @@ namespace ekg {
     ekg::vec4 operator/(const ekg::vec4 &l, float r);
 
     struct docker {
-        ekg::rect left {}, right {}, top {}, bottom {}, center {}, rect {};
+    public:
+        ekg::rect left {};
+        ekg::rect right {};
+        ekg::rect top {};
+        ekg::rect bottom {};
+        ekg::rect center {};
+        ekg::rect rect {};
     };
 
-    struct grid {
-        ekg::rect top {},
-                  top_left {},
-                  top_center {},
-                  top_right {};
-        ekg::rect bottom {},
-                  bottom_center {},
-                  bottom_left {},
-                  bottom_right {};
-    };
-
-    struct dockrect {
-        ekg::rect *rect {nullptr};
+    struct dock_rect {
+    public:
+        ekg::rect *p_rect {};
         uint16_t dock {};        
+    };
+
+    struct component {
+    public:
+        ekg::rect rect_dimension {}; 
+        ekg::rect rect_box {};
+        ekg::rect rect_text {};
+        ekg::rect rect_dimension_closed {};
+        ekg::rect rect_dimension_opened {};
+        
+        bool is_open {};
+        bool is_hovering {};
     };
 
     float clamp(float, float, float);
     void orthographic2d(float*, float, float, float, float);
     bool rect_collide_rect(const ekg::rect&, const ekg::rect&);
     bool rect_collide_vec(const ekg::rect&, const ekg::vec4&);
+    bool rect_collide_vec_precisely(const ekg::rect&, const ekg::vec4&);
 
     void set_rect_clamped(ekg::rect&, float);
     void set_dock_scaled(const ekg::rect&, const ekg::vec2&, ekg::docker&);
@@ -238,8 +262,7 @@ namespace ekg {
     float min(float, float);
     float max(float, float);
     float smooth(float, uint64_t);
-
-    ekg::vec4 &interact();
+    float lerp(float, float, float);
 }
 
 #endif

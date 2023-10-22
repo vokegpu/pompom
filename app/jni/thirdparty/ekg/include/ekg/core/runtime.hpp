@@ -1,16 +1,27 @@
+
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
- */
+* MIT License
+* 
+* Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+* 
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+* 
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+* 
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*/
 
 #ifndef EKG_CORE_H
 #define EKG_CORE_H
@@ -20,9 +31,9 @@
 #include "ekg/draw/font.hpp"
 #include "ekg/service/theme.hpp"
 #include "ekg/service/input.hpp"
-#include "ekg/core/feature.hpp"
 #include "ekg/service/layout.hpp"
-#include "ekg/util/util_ui.hpp"
+#include "ekg/util/io.hpp"
+#include "ekg/util/gui.hpp"
 #include <unordered_map>
 
 namespace ekg {
@@ -32,39 +43,28 @@ namespace ekg {
         static ekg::stack back;
         static ekg::stack front;
         static std::vector<ekg::ui::abstract_widget*> buffer;
+        static std::vector<uint64_t> tooktimeanalyzingtelemtry;
 
         static void refresh();
     };
 
     /* The main runtime for run ekg. */
-    class runtime : public ekg::feature {
+    class runtime {
     protected:
+        void prepare_tasks();
+        void prepare_ui_env();
         void erase(int32_t id);
     private:
-        SDL_Window* root {};
-        ekg::timing ui_timing {};
-
         /* Widget env lists and maps for tasks. */
 
         std::unordered_map<std::string, std::vector<ekg::ui::abstract_widget*>> widget_list_map {};
-        std::map<int32_t, ekg::ui::abstract_widget*> widget_map {};
-        std::map<int32_t, bool> processed_widget_map {};
+        std::unordered_map<int32_t, ekg::ui::abstract_widget*> widget_map {};
+        std::unordered_map<int32_t, bool> processed_widget_map {};
 
         /* Core services and instances. */
 
         ekg::ui::abstract *current_bind_group {};
-        ekg::gpu::allocator allocator {};
-
-        ekg::draw::font_renderer f_renderer_small {};
-        ekg::draw::font_renderer f_renderer_normal {};
-        ekg::draw::font_renderer f_renderer_big {};
-
-        ekg::service::input input_service {};
-        ekg::service::theme theme_service {};
-        ekg::service::handler handler_service {};
-        ekg::service::layout layout_service {};
-
-        /* Tokens for use in creation of elements. */
+        ekg::ui::abstract_widget *widget_absolute_activy {};
 
         int32_t token_id {};
         int32_t widget_id_focused {};
@@ -72,41 +72,33 @@ namespace ekg {
         int32_t swap_widget_id_focused {};
         int32_t widget_id_pressed_focused {};
         int32_t widget_id_released_focused {};
-        int32_t top_level_id {};
 
         bool enable_high_priority_frequency {};
-        
-        /* Security methods of ekg. */
-
-        void prepare_tasks();
-        void prepare_ui_env();
+        bool should_re_batch_gui {};
     public:
-        void set_root(SDL_Window* sdl_win_root);
-        SDL_Window *get_root();
-        ekg::timing &get_ui_timing();
+        ekg::service::input service_input {};
+        ekg::service::theme service_theme {};
+        ekg::service::handler service_handler {};
+        ekg::service::layout service_layout {};
 
-        void set_top_level(int32_t);
-        int32_t get_top_level();
+        ekg::draw::font_renderer f_renderer_small {};
+        ekg::draw::font_renderer f_renderer_normal {};
+        ekg::draw::font_renderer f_renderer_big {};
 
-        ekg::gpu::allocator &get_gpu_allocator();
-        ekg::draw::font_renderer &get_f_renderer_small();
-        ekg::draw::font_renderer &get_f_renderer_normal();
-        ekg::draw::font_renderer &get_f_renderer_big();
-
-        ekg::service::input &get_service_input();
-        ekg::service::theme &get_service_theme();
-        ekg::service::handler &get_service_handler();
-        ekg::service::layout &get_service_layout();
+        ekg::gpu::allocator gpu_allocator {};
+        ekg::timing ui_timing {};
+        SDL_Window* root {};
+    public:
         ekg::ui::abstract_widget* get_fast_widget_by_id(int32_t id);
 
         void gen_widget(ekg::ui::abstract *ui);
         void do_task_reload(ekg::ui::abstract_widget *widget);
-        void do_task_scissor(ekg::ui::abstract_widget *widget);
         void do_task_synclayout(ekg::ui::abstract_widget *widget);
         void do_task_refresh(ekg::ui::abstract_widget *widget);
         void set_update_high_frequency(ekg::ui::abstract_widget *widget);
+        void request_redraw_gui();
+
         void end_group_flag();
-        void end_scroll_flag();
         void update_size_changed();
 
         void init();

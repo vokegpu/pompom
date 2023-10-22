@@ -1,15 +1,25 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
+ * MIT License
+ * 
+ * Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef EKG_UI_POPUP_WIDGET_H
@@ -20,14 +30,7 @@
 // @TODO State for components/elements disabled
 namespace ekg::ui {
 	class popup_widget : public ekg::ui::abstract_widget {
-	protected:
-        struct element {
-            ekg::rect rect_text {};
-            ekg::rect rect_bound {};
-            bool separator {};
-        };
     public:
-        std::vector<ekg::ui::popup_widget::element> element_list {};
         float scissor_opened_height {};
         float separator_offset {};
         uint64_t elapsed_animation_ticks {};
@@ -40,12 +43,10 @@ namespace ekg::ui {
         bool is_hovering_any_popup(int32_t top_level);
         void unset_visible_all_sub_popup();
         void get_popup_path(std::string &path);
-
-        void on_destroy() override;
+    public:
         void on_reload() override;
         void on_pre_event(SDL_Event&) override;
         void on_event(SDL_Event&) override;
-        void on_post_event(SDL_Event&) override;
         void on_update() override;
         void on_draw_refresh() override;
 	};

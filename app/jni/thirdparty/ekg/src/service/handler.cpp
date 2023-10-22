@@ -1,66 +1,73 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
- */
+* MIT License
+* 
+* Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+* 
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+* 
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+* 
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*/
 
 #include "ekg/service/handler.hpp"
-#include "ekg/util/env.hpp"
+#include "ekg/util/io.hpp"
+#include "ekg/os/ekg_stl_thread.hpp"
 
-void ekg::service::handler::dispatch(ekg::cpu::event* event) {
-    if (this->events_going_on[event->uuid]) {
-        return;
+void ekg::multi_thread_task_thread_update(ekg::service::handler *p_service_handler) {
+    std::mutex mutex {};
+    while (p_service_handler->is_running_multi_thread_task()) {
+        mutex.lock();
     }
-
-    this->events_going_on[event->uuid] = true;
-    if (ekg::bitwise::contains(event->flags, ekg::event::alloc) && !ekg::bitwise::contains(event->flags, ekg::event::allocated) && ekg::bitwise::add(event->flags, ekg::event::allocated)) {
-        this->allocated_task_list.push_back(event);
-    }
-
-    this->event_queue.push(event);
-    this->should_poll_queue = true;
 }
 
-void ekg::service::handler::task(std::size_t task_index) {
-    auto *task = this->allocated_task_list.at(task_index);
+void ekg::service::handler::set_running_multi_thread_task(bool state) {
+    this->running_multi_thread_task = state;
+}
 
-    if (task != nullptr) {
-        this->dispatch(task);
+bool ekg::service::handler::is_running_multi_thread_task() {
+    return this->running_multi_thread_task;
+}
+
+ekg::task &ekg::service::handler::allocate() {
+    return this->pre_allocated_task_list.emplace_back();
+}
+
+ekg::task &ekg::service::handler::generate() {
+    return this->task_queue.emplace();
+}
+
+void ekg::service::handler::init_multi_thread_task_thread() {
+}
+
+void ekg::service::handler::dispatch_pre_allocated_task(uint64_t index) {
+    task &task {this->pre_allocated_task_list.at(index)};
+    bool &is_dispatched {this->pre_allocated_task_dispatched_map[task.p_tag]};
+
+    if (!is_dispatched) {
+        this->generate() = task;
+        is_dispatched = true;
     }
 }
 
 void ekg::service::handler::on_update() {
-    while (!this->event_queue.empty()) {
-        ekg::cpu::event* &ekg_event {this->event_queue.front()};
-        if (ekg_event != nullptr) {
-            ekg_event->fun(ekg_event->callback);
-            this->events_going_on[ekg_event->uuid] = false;
-        }
-
-        if (ekg_event != nullptr && !ekg::bitwise::contains(ekg_event->flags, ekg::event::alloc) && !ekg::bitwise::contains(ekg_event->flags, ekg::event::shared)) {
-            delete ekg_event;
-            ekg_event = {};
-        }
-
-        this->event_queue.pop();
+    while (!this->task_queue.empty()) {
+        task &ekg_event {this->task_queue.front()};
+        ekg_event.function(ekg_event.p_callback);
+        this->task_queue.pop();
     }
 
-    this->cool_down_ticks++;
-
-    if (this->cool_down_ticks > 255) {
-        this->events_going_on.clear();
-        this->cool_down_ticks = false;
-    }
-}
-
-bool ekg::service::handler::should_poll() {
-    return this->should_poll_queue;
+    this->pre_allocated_task_dispatched_map.clear();
 }

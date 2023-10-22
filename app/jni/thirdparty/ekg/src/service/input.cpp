@@ -1,135 +1,178 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
+ * MIT License
+ * 
+ * Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "ekg/service/input.hpp"
 #include <string>
 #include <algorithm>
 
-std::map<std::string, const char*> ekg::service::input::special_keys_name_map = {
+std::unordered_map<std::string, const char*> ekg::service::input::special_keys_name_map = {
         {"Left Shift", "lshift"}, {"Right Shift", "rshift"},
         {"Left Ctrl", "lctrl"},   {"Right Ctrl", "rctrl"},
-        {"Left Alt", "lalt"},     {"Right Alt", "ralt"},
+        {"Left Alt", "alt"},     {"Right Alt", "altgr"},
         {"Tab", "tab"}
 };
 
 void ekg::service::input::on_event(SDL_Event &sdl_event) {
-    this->pressed_event = false;
-    this->released_event = false;
-    this->motion_event = false;
+    this->was_pressed = false;
+    this->was_released = false;
+    this->has_motion = false;
+    this->was_typed = false;
 
     switch (sdl_event.type) {
+        case SDL_TEXTINPUT: {
+            this->was_pressed = true;
+            this->was_typed = true;
+            break;
+        }
+
         case SDL_KEYDOWN: {
-            this->pressed_event = true;
+            this->was_pressed = true;
+            std::string key_name {SDL_GetKeyName(sdl_event.key.keysym.sym)};
+            std::string string_builder {};
 
-            for (std::string key_name {SDL_GetKeyName(sdl_event.key.keysym.sym)}; !key_name.empty();) {
-                if (this->is_special_key(sdl_event.key.keysym.sym)) {
-                    this->special_keys_sdl_map[sdl_event.key.keysym.sym] = ekg::service::input::special_keys_name_map[key_name];
-                    this->special_keys_sdl_map[sdl_event.key.keysym.sym] += "+";
-                } else {
-                    std::string string_builder {};
-                    std::transform(key_name.begin(), key_name.end(), key_name.begin(), ::tolower);
+            if (this->is_special_key(sdl_event.key.keysym.sym)) {
+                string_builder += ekg::service::input::special_keys_name_map[key_name];
+                this->special_keys_sdl_map[sdl_event.key.keysym.sym] = string_builder;
+                this->special_keys_sdl_map[sdl_event.key.keysym.sym] += "+";
 
-                    this->complete_with_units(string_builder, key_name);
-                    this->callback(string_builder, true);
-                    this->input_released_list.push_back(string_builder);
+                this->callback(string_builder, true);
+                this->is_special_keys_released = true;
+            } else {
+                std::transform(key_name.begin(), key_name.end(), key_name.begin(), ::tolower);
+                string_builder += "abs-";
+                string_builder += key_name;
 
-                    if (string_builder != key_name && !this->contains_unit(string_builder)) {
-                        this->special_keys_unit_pressed.push_back(string_builder);
-                    }
+                this->callback(string_builder, true);
+                this->input_released_list.push_back(string_builder);
+
+                string_builder.clear();
+                this->complete_with_units(string_builder, key_name);
+                this->callback(string_builder, true);
+                this->input_released_list.push_back(string_builder);
+
+                if (string_builder != key_name && !this->contains_unit(string_builder)) {
+                    this->special_keys_unit_pressed.push_back(string_builder);
                 }
-
-                break;
             }
 
             break;
         }
 
         case SDL_KEYUP: {
-            this->pressed_event = true;
+            this->was_released = true;
+            std::string key_name {SDL_GetKeyName(sdl_event.key.keysym.sym)};
+            std::string string_builder {};
 
-            for (std::string key_name {SDL_GetKeyName(sdl_event.key.keysym.sym)}; !key_name.empty();) {
-                if (this->is_special_key(sdl_event.key.keysym.sym)) {
-                    this->special_keys_sdl_map[sdl_event.key.keysym.sym] = "";
-                    this->special_keys_released.emplace_back(ekg::service::input::special_keys_name_map[key_name]);
-                } else {
-                    std::string string_builder {};
-                    std::transform(key_name.begin(), key_name.end(), key_name.begin(), ::tolower);
+            if (this->is_special_key(sdl_event.key.keysym.sym)) {
+                this->special_keys_sdl_map[sdl_event.key.keysym.sym] = "";
 
-                    this->complete_with_units(string_builder, key_name);
-                    this->callback(string_builder, false);
+                string_builder += ekg::service::input::special_keys_name_map[key_name];
+                this->callback(string_builder, false);
+                this->is_special_keys_released = true;
 
-                    string_builder += "-up";
-                    this->callback(string_builder, true);
-                    this->input_released_list.push_back(string_builder);
-                }
+                string_builder += "-up";
+                this->callback(string_builder, true);
+            } else {
+                std::transform(key_name.begin(), key_name.end(), key_name.begin(), ::tolower);
+                string_builder += "abs-";
+                string_builder += key_name;
+                string_builder += "-up";
 
-                break;
+                this->callback(string_builder, true);
+                this->input_released_list.push_back(string_builder);
+
+                string_builder.clear();
+                this->complete_with_units(string_builder, key_name);
+                string_builder += "-up";
+
+                this->callback(string_builder, true);
+                this->input_released_list.push_back(string_builder);
             }
 
             break;
         }
 
         case SDL_MOUSEBUTTONDOWN: {
-            this->pressed_event = true;
+            std::string string_builder {"mouse-"};
+            string_builder += std::to_string(sdl_event.button.button);
+
+            this->was_pressed = true;
+            this->callback(string_builder, true);
+            this->input_released_list.push_back(string_builder);
+
             bool double_click_factor {ekg::reach(this->double_interact, 500)};
-            const std::string buttonstring {std::to_string(sdl_event.button.button)};
-            this->callback("mouse-" + buttonstring, true);
-        
             if (!double_click_factor) {
-                const std::string input_tag = "mouse-" + std::to_string(sdl_event.button.button) + "-double";
-                this->callback(input_tag, true);
-                this->double_click_mouse_buttons_pressed.push_back(input_tag);
+                string_builder += "-double";
+                this->callback(string_builder, true);
+
+                this->double_click_mouse_buttons_pressed.push_back(string_builder);
+                this->input_released_list.push_back(string_builder);
             }
 
             if (double_click_factor) {
                 ekg::reset(this->double_interact);
             }
+
             break;
         }
 
         case SDL_MOUSEBUTTONUP: {
-            this->released_event = true;
-            std::string buttonstring {"mouse-"};
-            buttonstring += std::to_string(sdl_event.button.button);
+            this->was_released = true;
+            std::string string_builder {"mouse-"};
 
-            this->callback(buttonstring, false);
-            this->callback(buttonstring + "-double", false);
-            this->callback(buttonstring + "-up", true);
+            string_builder += std::to_string(sdl_event.button.button);
+            string_builder += "-up";
 
-            this->input_released_list.push_back(buttonstring + "-up");
+            this->callback(string_builder, true);
+            this->input_released_list.push_back(string_builder);
+            break;
         }
 
         case SDL_MOUSEMOTION: {
-            this->motion_event = true;
+            this->has_motion = true;
             this->interact.x = static_cast<float>(sdl_event.motion.x);
             this->interact.y = static_cast<float>(sdl_event.motion.y);
             break;
         }
 
         case SDL_MOUSEWHEEL: {
-            this->wheel_event = true;
+            this->callback("mouse-wheel", true);
+            this->was_wheel = true;
+
+            this->callback("mouse-wheel-up", sdl_event.wheel.y > 0);
+            this->callback("mouse-wheel-down", sdl_event.wheel.y < 0);
+            this->callback("mouse-wheel-right", sdl_event.wheel.x > 0);
+            this->callback("mouse-wheel-left", sdl_event.wheel.x < 0);
+
             this->interact.z = sdl_event.wheel.preciseX;
             this->interact.w = sdl_event.wheel.preciseY;
 
-            this->callback("mouse-wheel", true);
-            this->callback("mouse-wheel-up", this->interact.w > 0);
-            this->callback("mouse-wheel-down", this->interact.w < 0);
             break;
         }
 
         case SDL_FINGERDOWN: {
-            this->pressed_event = true;
+            this->was_pressed = true;
             ekg::reset(this->timing_last_interact);
             bool reach_double_interact {ekg::reach(this->double_interact, 500)};
 
@@ -150,7 +193,7 @@ void ekg::service::input::on_event(SDL_Event &sdl_event) {
         }
 
         case SDL_FINGERUP: {
-            this->released_event = true;
+            this->was_released = true;
             this->callback("finger-hold", (this->finger_hold_event = ekg::reach(this->timing_last_interact, 750)));
             this->callback("finger-click", false);
             this->callback("finger-click-double", false);
@@ -175,7 +218,7 @@ void ekg::service::input::on_event(SDL_Event &sdl_event) {
         }
 
         case SDL_FINGERMOTION: {
-            this->motion_event = true;
+            this->has_motion = true;
             this->interact.x = sdl_event.tfinger.x * static_cast<float>(ekg::display::width);
             this->interact.y = sdl_event.tfinger.y * static_cast<float>(ekg::display::height);
 
@@ -194,7 +237,7 @@ void ekg::service::input::on_event(SDL_Event &sdl_event) {
         }
     }
 
-    if (this->motion_event && !this->double_click_mouse_buttons_pressed.empty()) {
+    if (this->has_motion && !this->double_click_mouse_buttons_pressed.empty()) {
         for (const std::string &button : this->double_click_mouse_buttons_pressed) {
             this->callback(button, false);
         }
@@ -203,28 +246,12 @@ void ekg::service::input::on_event(SDL_Event &sdl_event) {
     }
 }
 
-bool ekg::service::input::was_pressed() {
-    return this->pressed_event;
-}
-
-bool ekg::service::input::was_released() {
-    return this->released_event;
-}
-
-bool ekg::service::input::was_motion() {
-    return this->motion_event;
-}
-
-bool ekg::service::input::was_wheel() {
-    return this->wheel_event || this->finger_swipe_event;
-}
-
 void ekg::service::input::on_update() {
-    if (this->wheel_event) {
+    if (this->was_wheel) {
         this->callback("mouse-wheel", false);
         this->callback("mouse-wheel-up", false);
         this->callback("mouse-wheel-down", false);
-        this->wheel_event = false;
+        this->was_wheel = false;
     }
 
     if (this->finger_swipe_event) {
@@ -236,13 +263,13 @@ void ekg::service::input::on_update() {
 
     this->finger_hold_event = false;
 
-    if (!this->special_keys_released.empty()) {
+    if (this->is_special_keys_released) {
         for (std::string &units : this->special_keys_unit_pressed) {
             this->callback(units, false);
         }
 
         this->special_keys_unit_pressed.clear();
-        this->special_keys_released.clear();
+        this->is_special_keys_released = false;
     }
 
     if (!this->input_released_list.empty()) {
@@ -251,6 +278,14 @@ void ekg::service::input::on_update() {
         }
 
         this->input_released_list.clear();
+    }
+
+    if (!this->immediate_register_list.empty()) {
+        for (std::string &inputs : this->immediate_register_list) {
+            this->input_register_map[inputs] = false;
+        }
+
+        this->immediate_register_list.clear();
     }
 }
 
@@ -311,6 +346,11 @@ void ekg::service::input::complete_with_units(std::string &string_builder, std::
     string_builder += this->special_keys_sdl_map[SDLK_RALT];
     string_builder += this->special_keys_sdl_map[SDLK_TAB];
     string_builder += key_name;
+}
+
+void ekg::service::input::fire(std::string_view key) {
+    this->input_register_map[key.data()] = true;
+    this->immediate_register_list.emplace_back(key);
 }
 
 bool ekg::service::input::contains_unit(std::string_view label) {

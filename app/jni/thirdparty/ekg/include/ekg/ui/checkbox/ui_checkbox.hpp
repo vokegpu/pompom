@@ -1,23 +1,32 @@
 /*
- * VOKEGPU EKG LICENSE
- *
- * Respect ekg license policy terms, please take a time and read it.
- * 1- Any "skidd" or "stole" is not allowed.
- * 2- Forks and pull requests should follow the license policy terms.
- * 3- For commercial use, do not sell without give credit to vokegpu ekg.
- * 4- For ekg users and users-programmer, we do not care, free to use in anything (utility, hacking, cheat, game, software).
- * 5- Malware, rat and others virus. We do not care.
- * 6- Do not modify this license under any instance.
- *
- * @VokeGpu 2023 all rights reserved.
+ * MIT License
+ * 
+ * Copyright (c) 2022-2023 Rina Wilk / vokegpu@gmail.com
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef EKG_UI_CHECKBOX_H
 #define EKG_UI_CHECKBOX_H
 
 #include "ekg/ui/abstract/ui_abstract.hpp"
-#include "ekg/util/env.hpp"
-#include "ekg/cpu/event.hpp"
+#include "ekg/core/task.hpp"
 
 namespace ekg::ui {
     class checkbox : public ekg::ui::abstract {
@@ -26,32 +35,32 @@ namespace ekg::ui {
         uint16_t dock_text {}, dock_box {};
         std::string text {};
         ekg::font font_size {};
-        ekg::cpu::event *callback {};
+        task *callback {};
     public:
-        void set_callback(ekg::cpu::event*);
-        ekg::cpu::event *get_callback();
+        ekg::ui::checkbox *set_callback(task *p_callback);
+        task *get_callback();
 
-        void set_font_size(ekg::font font);
+        ekg::ui::checkbox *set_font_size(ekg::font font);
         ekg::font get_font_size();
-        void set_place(uint16_t);
+        ekg::ui::checkbox *set_place(uint16_t dock);
 
-        void set_width(float);
+        ekg::ui::checkbox *set_width(float w);
         float get_width();
 
-        void set_scaled_height(int32_t);
+        ekg::ui::checkbox *set_scaled_height(int32_t h);
         int32_t get_scaled_height();
         float get_height();
 
-        void set_text(std::string_view);
+        ekg::ui::checkbox *set_text(std::string_view text);
         std::string_view get_text();
 
-        void set_value(bool);
+        ekg::ui::checkbox *set_value(bool state);
         bool get_value();
 
-        void set_text_align(uint16_t);
+        ekg::ui::checkbox *set_text_align(uint16_t dock);
         uint16_t get_text_align();
 
-        void set_box_align(uint16_t);
+        ekg::ui::checkbox *set_box_align(uint16_t dock);
         uint16_t get_box_align();
     };
 }

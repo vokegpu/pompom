@@ -15,27 +15,40 @@
 #ifndef EKG_SERVICE_HANDLER_H
 #define EKG_SERVICE_HANDLER_H
 
-#include "ekg/cpu/event.hpp"
+#include "ekg/core/task.hpp"
 #include <iostream>
 #include <vector>
 #include <queue>
 #include <map>
+#include <unordered_map>
 
 namespace ekg::service {
     class handler {
     protected:
-        std::vector<ekg::cpu::event*> allocated_task_list {};
-        std::queue<ekg::cpu::event*> event_queue {};
-        std::map<const char*, bool> events_going_on {};
-
-        bool should_poll_queue {};
-        uint8_t cool_down_ticks {};
+        std::queue<task> task_queue {};
+        std::unordered_map<const char*, bool> pre_allocated_task_dispatched_map {};
+        std::vector<task> pre_allocated_task_list {};
+    protected:
+        std::queue<task> multi_thread_task_queue {};
+        std::unordered_map<const char*, bool> multi_thread_task_dispatched_map {};
+        bool running_multi_thread_task {};
     public:
-        void dispatch(ekg::cpu::event* event);
-        void task(std::size_t task_index);
-        bool should_poll();
+        void set_running_multi_thread_task(bool state);
+        bool is_running_multi_thread_task();
+
+        task &allocate();
+        task &generate();
+        task &generate_multi_thread();
+
+        void init_multi_thread_task_thread();
+        void dispatch_pre_allocated_task(uint64_t index);
         void on_update();
+        void on_update_multi_thread();
     };
+}
+
+namespace ekg {
+    void multi_thread_task_thread_update(ekg::service::handler *p_service_handler);
 }
 
 #endif
