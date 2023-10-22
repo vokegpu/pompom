@@ -48,7 +48,7 @@ int32_t main(int32_t, char**) {
 
     for (int32_t it {}; it < 1; it++) {
         ekg::theme().gen_default_dark_theme();
-        ekg::checkbox("Light Theme", false, ekg::dock::fill | ekg::dock::next)->set_callback(new ekg::cpu::event {"theme-switcher", frame2, [](void *pdata) {
+        ekg::checkbox("Light Theme", false, ekg::dock::fill | ekg::dock::next)->set_callback(new ekg::task {"theme-switcher", frame2, [](void *pdata) {
             ekg::ui::frame *frame {static_cast<ekg::ui::frame*>(pdata)};
 
             auto &theme {ekg::theme()};

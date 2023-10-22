@@ -205,8 +205,8 @@ void ekg::runtime::process_event(SDL_Event &sdl_event) {
 }
 
 void ekg::runtime::process_update() {
+    ekg::reach(this->ui_timing, 1000) && ekg::reset(this->ui_timing);
     this->service_input.on_update();
-    bool {ekg::reach(this->ui_timing, 1000) && ekg::reset(this->ui_timing)};
 
     if (this->enable_high_priority_frequency) {
         auto &update = this->widget_list_map["update"];
